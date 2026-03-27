@@ -1,0 +1,43 @@
+const ScreenEnums = {
+    // Onboarding Screens
+    INFO: 'INFO',
+
+    // Auth Screens
+    PHONE_NUMBER: 'PHONE_NUMBER',
+    OTP: 'OTP',
+    WELCOME: 'WELCOME',
+    LOCATION: 'LOCATION',
+    GAS_SIZE: 'GAS_SIZE',
+    CYLINDER_COUNT: 'CYLINDER_COUNT',
+
+    // Onboarding Flow
+    ONBOARDING_1: 'ONBOARDING_1',
+
+    // Bottom Tab Screens
+    HOME: 'HOME',
+    ORDER_HISTORY: 'ORDER_HISTORY',
+    PROFILE: 'PROFILE',
+
+    // Navigators
+    BOTTOM_TABS: 'BottomTabs',
+    AUTH_STACK: 'AuthStack',
+    ONBOARDING_STACK: 'OnboardingStack',
+
+    // Feature Screens
+    REFILL_GAS: 'REFILL_GAS',
+    DELIVERY_SUMMARY: 'DELIVERY_SUMMARY',
+    DELIVERY_DETAILS: 'DELIVERY_DETAILS',
+    PERSONAL_INFO: 'PERSONAL_INFO',
+    UPDATE_NAME: 'UPDATE_NAME',
+    UPDATE_EMAIL: 'UPDATE_EMAIL',
+    UPDATE_LOCATION: 'UPDATE_LOCATION',
+    UPDATE_CYLINDER: 'UPDATE_CYLINDER',
+    OFFERS_AND_PROMOS: 'OFFERS_AND_PROMOS',
+    SUPPORT: 'SUPPORT',
+    SUPPORT_CHAT: 'SUPPORT_CHAT',
+    SUPPORT_CALL: 'SUPPORT_CALL',
+    SUPPORT_FAQS: 'SUPPORT_FAQS',
+    DELETE_ACCOUNT: 'DELETE_ACCOUNT',
+} as const;
+
+export default ScreenEnums;

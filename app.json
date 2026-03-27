@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "100gas",
+    "slug": "100gas",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icons/logoblack.png",
+    "scheme": "100gas",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.theoneglobal.hundredgas"
+    },
+    "android": {
+      "package": "com.theoneglobal.hundredgas",
+      "adaptiveIcon": {
+        "backgroundColor": "#DD5844",
+        "foregroundImage": "./src/assets/icons/logoblack.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./src/assets/icons/logoblack.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/icons/logo.png",
+          "imageWidth": 171,
+          "resizeMode": "contain",
+          "backgroundColor": "#DD5844"
+        }
+      ],
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
