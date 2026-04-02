@@ -5,6 +5,8 @@ import Toast from 'react-native-toast-message';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { COLORS } from './src/constants/colors';
 
 // Set the base background color as early as possible
@@ -12,6 +14,8 @@ SystemUI.setBackgroundColorAsync(COLORS.primaryWhite);
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 export type InitialRoute = 'INFO' | 'AuthStack' | 'OnboardingStack' | 'BottomTabs';
 
@@ -24,14 +28,16 @@ export default function App() {
       try {
         console.log('🔤 [App] Starting resource loading...');
         
-        // Preload essential images
-        await Promise.all([
+        // Preload essential images and tokens simultaneously
+        const [_, __, token] = await Promise.all([
           Asset.fromModule(require('./src/assets/images/infobg.png')).downloadAsync(),
           Asset.fromModule(require('./src/assets/icons/logo.png')).downloadAsync(),
+          AsyncStorage.getItem('accessToken')
         ]);
         
-        // Temporarily just resolve to BottomTabs as start
-        const resolvedRoute: InitialRoute = 'BottomTabs';
+        // Fast-track into the app if they have an active session token saved
+        const resolvedRoute: InitialRoute = token ? 'BottomTabs' : 'INFO';
+        
         setInitialRoute(resolvedRoute);
         console.log('✅ [App] Resources loaded. Initial route:', resolvedRoute);
       } catch (error) {
@@ -59,9 +65,11 @@ export default function App() {
 
   console.log('🚀 [App] Rendering main app with initial route:', initialRoute);
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
-        <Navigation initialRoute={initialRoute} onReady={onNavigationReady} />
-        <Toast />
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+          <Navigation initialRoute={initialRoute} onReady={onNavigationReady} />
+          <Toast />
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

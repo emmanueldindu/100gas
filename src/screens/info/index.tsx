@@ -74,6 +74,7 @@ export default function InfoScreen() {
                 <TouchableOpacity 
                     style={styles.signInButton}
                     activeOpacity={0.7}
+                    onPress={() => navigation.navigate('AuthStack', { screen: 'PHONE_NUMBER' })}
                 >
                     <Text style={styles.signInButtonText}>Sign In</Text>
                 </TouchableOpacity>

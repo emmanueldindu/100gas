@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import ScreenEnums from '../../../enums/screen-enums';
 import { AuthStackParamList, AuthStackNavigationProp } from '../../../navigation/auth-stack/auth-stack.types';
@@ -22,9 +22,32 @@ const INPUT_BG = '#F5F4F7';
 export default function WelcomeScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<AuthStackNavigationProp>();
+    const route = useRoute<RouteProp<AuthStackParamList, 'WELCOME'>>();
     
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+
+    const validateEmail = (email: string) => {
+        const re = /\S+@\S+\.\S+/;
+        return re.test(email);
+    };
+
+    const isReady = name.trim().length > 0 && validateEmail(email);
+
+    const handleContinue = () => {
+        const parts = name.trim().split(/\s+/);
+        const firstName = parts[0];
+        const lastName = parts.slice(1).join(' ') || '';
+
+        const payload = {
+            registrationToken: route.params?.registrationToken || '0000', // Ensure a fallback if token is missing
+            firstName: firstName || '',
+            lastName: lastName || '',
+            email,
+            customerType: 'HOUSEHOLD', // Default value
+        };
+        navigation.navigate(ScreenEnums.LOCATION, { payload } as any);
+    };
 
     return (
         <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
@@ -79,10 +102,10 @@ export default function WelcomeScreen() {
                             </View>
 
                             <TouchableOpacity 
-                                style={[styles.continueButton, (!name || !email) && styles.disabledButton]}
+                                style={[styles.continueButton, !isReady && styles.disabledButton]}
                                 activeOpacity={0.8}
-                                disabled={!name || !email}
-                                onPress={() => navigation.navigate(ScreenEnums.LOCATION)}
+                                disabled={!isReady}
+                                onPress={handleContinue}
                             >
                                 <Text style={styles.continueText}>Continue</Text>
                             </TouchableOpacity>

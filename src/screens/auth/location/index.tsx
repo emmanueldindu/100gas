@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -9,36 +9,61 @@ import {
     Platform,
     ScrollView,
     Pressable,
-    FlatList
+    FlatList,
+    ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenEnums from '../../../enums/screen-enums';
 import { COLORS } from '../../../constants/colors';
-import { AuthStackNavigationProp } from '../../../navigation/auth-stack/auth-stack.types';
+import { AuthStackNavigationProp, AuthStackParamList } from '../../../navigation/auth-stack/auth-stack.types';
+import { getStatesResult } from '../../../service/locations';
 
 const INPUT_BG = '#F5F4F7';
 const UNDERLINE_COLOR = '#DD5844';
 
-const STATES = [
-    'Lagos',
-    'Abuja (FCT)',
-    'Rivers',
-    'Enugu',
-    'Delta'
-];
-
 export default function LocationScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<AuthStackNavigationProp>();
+    const route = useRoute<RouteProp<AuthStackParamList, 'LOCATION'>>();
     
     const [selectedState, setSelectedState] = useState('');
     const [address, setAddress] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [states, setStates] = useState<{id: string, name: string}[]>([]);
+    const [isLoadingStates, setIsLoadingStates] = useState(false);
+
+    useEffect(() => {
+        const fetchStates = async () => {
+            setIsLoadingStates(true);
+            try {
+                const res = await getStatesResult();
+                if (res?.success && Array.isArray(res?.data)) {
+                    setStates(res.data);
+                }
+            } catch (err) {
+                console.log('Error fetching states', err);
+            } finally {
+                setIsLoadingStates(false);
+            }
+        };
+        fetchStates();
+    }, []);
 
     const isReady = selectedState && address.length > 5;
+
+    const handleContinue = () => {
+        const payload = {
+            ...route.params?.payload,
+            state: selectedState,
+            address: address,
+            latitude: 6.5244,  // Default Lagos Latitude
+            longitude: 3.3792, // Default Lagos Longitude
+        };
+        navigation.navigate(ScreenEnums.GAS_SIZE, { payload } as any);
+    };
 
     return (
         <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
@@ -88,35 +113,41 @@ export default function LocationScreen() {
                                 <View style={styles.underline} />
 
                                 {showDropdown && (
-                                    <>
-                                        <Pressable 
-                                            style={styles.dropdownOverlay} 
-                                            onPress={() => setShowDropdown(false)} 
-                                        />
-                                        <View style={styles.dropdownMenu}>
-                                            {STATES.map((state, index) => (
-                                                <TouchableOpacity 
-                                                    key={state}
-                                                    style={[
-                                                        styles.dropdownItem,
-                                                        selectedState === state && styles.selectedItem,
-                                                        index === STATES.length - 1 && { borderBottomWidth: 0 }
-                                                    ]}
-                                                    onPress={() => {
-                                                        setSelectedState(state);
-                                                        setShowDropdown(false);
-                                                    }}
-                                                >
-                                                    <Text style={[
-                                                        styles.itemText,
-                                                        selectedState === state && styles.selectedItemText
-                                                    ]}>
-                                                        {state}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </>
+                                    <View style={styles.dropdownMenu}>
+                                        {isLoadingStates ? (
+                                            <View style={{ padding: 20, alignItems: 'center' }}>
+                                                <ActivityIndicator color={COLORS.primary} />
+                                            </View>
+                                        ) : (
+                                            <FlatList
+                                                data={states}
+                                                keyExtractor={(item) => item.id}
+                                                renderItem={({ item, index }) => (
+                                                    <TouchableOpacity 
+                                                        style={[
+                                                            styles.dropdownItem,
+                                                            selectedState === item.name && styles.selectedItem,
+                                                            index === states.length - 1 && { borderBottomWidth: 0 }
+                                                        ]}
+                                                        onPress={() => {
+                                                            setSelectedState(item.name);
+                                                            setShowDropdown(false);
+                                                        }}
+                                                    >
+                                                        <Text style={[
+                                                            styles.itemText,
+                                                            selectedState === item.name && styles.selectedItemText
+                                                        ]}>
+                                                            {item.name}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                                style={{ maxHeight: 250 }}
+                                                nestedScrollEnabled={true}
+                                                showsVerticalScrollIndicator={true}
+                                            />
+                                        )}
+                                    </View>
                                 )}
                             </View>
 
@@ -140,7 +171,7 @@ export default function LocationScreen() {
                                 style={[styles.continueButton, !isReady && styles.disabledButton]}
                                 activeOpacity={0.8}
                                 disabled={!isReady}
-                                onPress={() => navigation.navigate(ScreenEnums.GAS_SIZE)}
+                                onPress={handleContinue}
                             >
                                 <Text style={styles.continueText}>Continue</Text>
                             </TouchableOpacity>
@@ -220,7 +251,7 @@ const styles = StyleSheet.create({
     },
     dropdownMenu: {
         position: 'absolute',
-        top: 90, // Position below the trigger + spacing
+        top: 90,
         left: 0,
         right: 0,
         backgroundColor: COLORS.primaryWhite,
@@ -234,6 +265,7 @@ const styles = StyleSheet.create({
         elevation: 10,
         zIndex: 1000,
         padding: 8,
+        maxHeight: 280,
     },
     dropdownItem: {
         height: 56,

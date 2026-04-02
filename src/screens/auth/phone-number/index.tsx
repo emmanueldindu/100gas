@@ -4,6 +4,7 @@ import {
     Text,
     StyleSheet,
     TextInput,
+    ActivityIndicator,
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
@@ -17,13 +18,38 @@ import ScreenEnums from '../../../enums/screen-enums';
 import { AuthStackNavigationProp } from '../../../navigation/auth-stack/auth-stack.types';
 import { COLORS } from '../../../constants/colors';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { requestOtp } from '../../../service/auth';
 
 export default function PhoneNumberScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<AuthStackNavigationProp>();
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const isReady = phoneNumber.length >= 7; // Allowing 7-10 digits for flexibility
+
+    const handleRequestOtp = async () => {
+        const payloadPhone = `+234${phoneNumber}`;
+        setIsLoading(true);
+        try {
+            await requestOtp(payloadPhone);
+            Toast.show({
+                type: 'success',
+                text1: 'OTP Sent',
+                text2: 'An OTP has been sent to your phone number.'
+            });
+            navigation.navigate(ScreenEnums.OTP, { phoneNumber: payloadPhone });
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error?.message || 'Failed to request OTP. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
@@ -88,13 +114,17 @@ export default function PhoneNumberScreen() {
                         <TouchableOpacity
                             style={[
                                 styles.doneButton,
-                                !isReady && styles.doneButtonDisabled
+                                (!isReady || isLoading) && styles.doneButtonDisabled
                             ]}
-                            onPress={() => navigation.navigate(ScreenEnums.OTP, { phoneNumber: `+234${phoneNumber}` })}
+                            onPress={handleRequestOtp}
                             activeOpacity={0.8}
-                            disabled={!isReady}
+                            disabled={!isReady || isLoading}
                         >
-                            <Text style={styles.doneButtonText}>Done</Text>
+                            {isLoading ? (
+                                <ActivityIndicator color={COLORS.primaryWhite} />
+                            ) : (
+                                <Text style={styles.doneButtonText}>Done</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

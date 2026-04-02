@@ -14,11 +14,11 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
-import { AuthStackNavigationProp } from '../../../navigation/auth-stack/auth-stack.types';
+import { AuthStackNavigationProp, AuthStackParamList } from '../../../navigation/auth-stack/auth-stack.types';
 import ScreenEnums from '../../../enums/screen-enums';
 
 const { width } = Dimensions.get('window');
@@ -52,6 +52,7 @@ const ACTUAL_SIZES = GAS_SIZES.filter(s => !s.key.includes('spacer'));
 export default function GasSizeScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<AuthStackNavigationProp>();
+    const route = useRoute<RouteProp<AuthStackParamList, 'GAS_SIZE'>>();
     
     const [selectedType, setSelectedType] = useState('Household');
     const [showDropdown, setShowDropdown] = useState(false);
@@ -60,6 +61,26 @@ export default function GasSizeScreen() {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const isReady = !!selectedType;
+
+    const handleContinue = () => {
+        const itemKey = ACTUAL_SIZES[activeIndex]?.key || '1-5kg';
+        let sizeCode = "KG_3";
+        if (itemKey === '1-5kg') sizeCode = "KG_3";
+        else if (itemKey === '6-9kg') sizeCode = "KG_6";
+        else if (itemKey === '12.5-13kg') sizeCode = "KG_12_5";
+        else if (itemKey === '19-25kg') sizeCode = "KG_25";
+        else if (itemKey === '45-50kg') sizeCode = "KG_50";
+
+        const typeFormatted = selectedType.toUpperCase().replace(' ', '_');
+
+        const payload = {
+            ...route.params?.payload,
+            customerType: typeFormatted,
+            cylinderData: [{ size: sizeCode }]
+        };
+
+        navigation.navigate(ScreenEnums.CYLINDER_COUNT, { payload } as any);
+    };
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -243,7 +264,7 @@ export default function GasSizeScreen() {
                                     style={[styles.continueButton, !isReady && styles.disabledButton]}
                                     activeOpacity={0.8}
                                     disabled={!isReady}
-                                    onPress={() => navigation.navigate(ScreenEnums.CYLINDER_COUNT)}
+                                    onPress={handleContinue}
                                 >
                                     <Text style={styles.continueText}>Continue</Text>
                                 </TouchableOpacity>

@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaVi
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
 
@@ -200,9 +201,20 @@ export default function ProfileScreen() {
                             <TouchableOpacity 
                                 style={styles.logoutConfirmButton}
                                 activeOpacity={0.8}
-                                onPress={() => {
+                                onPress={async () => {
                                     toggleLogoutModal();
-                                    // Handle actual logout logic here
+                                    try {
+                                        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userToken']);
+                                    } catch (e) {
+                                        console.error('Logout error:', e);
+                                    }
+                                    // Reset stack to prevent navigating back to protected screens
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [{ name: 'INFO' }],
+                                        })
+                                    );
                                 }}
                             >
                                 <Text style={styles.logoutConfirmButtonText}>Log out</Text>

@@ -8,7 +8,8 @@ import {
     KeyboardAvoidingView, 
     Platform,
     ScrollView,
-    Pressable
+    Pressable,
+    ActivityIndicator
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,9 @@ import { AuthStackParamList, AuthStackNavigationProp } from '../../../navigation
 import ScreenEnums from '../../../enums/screen-enums';
 import { COLORS } from '../../../constants/colors';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { verifyOtp } from '../../../service/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function OTPScreen() {
     const insets = useSafeAreaInsets();
@@ -26,6 +30,7 @@ export default function OTPScreen() {
     const phoneNumber = route.params?.phoneNumber || '+234 000 000 000';
     
     const [otp, setOtp] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<TextInput>(null);
     const scrollRef = useRef<ScrollView>(null);
 
@@ -36,9 +41,56 @@ export default function OTPScreen() {
         }, 100);
     };
 
+    const handleVerifyOtp = async (code: string) => {
+        if (code.length !== 4) return;
+        setIsLoading(true);
+        try {
+            const response = await verifyOtp(phoneNumber, code);
+            console.log('OTP Verify Full Response:', JSON.stringify(response, null, 2));
+
+            const data = response?.data || response; // Fallback in case the backend nests it differently
+            
+            if (data?.isNewUser === true) {
+                const token = data?.registrationToken || '';
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success',
+                    text2: 'OTP verified successfully.'
+                });
+                navigation.navigate(ScreenEnums.WELCOME, { registrationToken: token });
+            } else {
+                const accessToken = data?.tokens?.accessToken;
+                const refreshToken = data?.tokens?.refreshToken;
+
+                if (accessToken) {
+                    await AsyncStorage.setItem('accessToken', accessToken);
+                }
+                if (refreshToken) {
+                    await AsyncStorage.setItem('refreshToken', refreshToken);
+                }
+                
+                Toast.show({
+                    type: 'success',
+                    text1: 'Login Successful',
+                    text2: 'Welcome back to 100gas!'
+                });
+                (navigation as any).navigate(ScreenEnums.BOTTOM_TABS);
+            }
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Verification Failed',
+                text2: error?.message || 'Invalid OTP. Please try again.'
+            });
+            setOtp(''); // Optionally clear the input if wrong
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const renderOtpBoxes = () => {
         const boxes = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 4; i++) {
             const char = otp[i] || '';
             const isFocused = otp.length === i;
             boxes.push(
@@ -93,7 +145,7 @@ export default function OTPScreen() {
                         
                         <Text style={styles.subtext}>
                             A OTP has been sent to <Text style={styles.phoneHighlight}>{phoneNumber}</Text>
-                            {'\n'}Kind enter below the 6 digit code.
+                            {'\n'}Kind enter below the 4 digit code.
                         </Text>
                         
                         <Pressable 
@@ -108,24 +160,24 @@ export default function OTPScreen() {
                             style={styles.hiddenInput}
                             value={otp}
                             onChangeText={(val) => {
-                                if (val.length <= 6) {
+                                if (val.length <= 4) {
                                     setOtp(val);
-                                    if (val.length === 6) {
-                                        // Auto-navigate when OTP is complete
-                                        setTimeout(() => {
-                                            navigation.navigate(ScreenEnums.WELCOME);
-                                        }, 400); // Slight delay for visual feedback
+                                    if (val.length === 4) {
+                                        handleVerifyOtp(val);
                                     }
                                 }
                             }}
                             keyboardType="number-pad"
-                            maxLength={6}
+                            maxLength={4}
                             autoFocus
                             onFocus={onFocus}
+                            editable={!isLoading}
                         />
 
-                        {/* Verify Button inside ScrollView to ensure it moves with keyboard */}
-                        
+                        <View style={{ marginTop: 20, alignItems: 'center' }}>
+                            {isLoading && <ActivityIndicator size="large" color={COLORS.primary} />}
+                        </View>
+
                     </View>
                  
                 </ScrollView>
@@ -183,7 +235,9 @@ const styles = StyleSheet.create({
     },
     otpContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        gap:40,
+        // alignItems:'center',
+        justifyContent: 'center',
         width: '100%',
     },
     otpBox: {
@@ -191,7 +245,7 @@ const styles = StyleSheet.create({
         height: 48,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#EFEFEF',
+        borderColor: '#DDDDDF',
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: COLORS.primaryWhite,

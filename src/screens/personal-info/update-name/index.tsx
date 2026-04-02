@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -7,35 +7,98 @@ import {
     KeyboardAvoidingView, 
     Platform,
     ScrollView,
-    TextInput
+    TextInput,
+    ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { RootStackNavigationProp } from '../../screens.types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProfile, updateProfile } from '../../../service/auth';
+import Toast from 'react-native-toast-message';
 
 const INPUT_BG = '#F5F4F7';
 const UNDERLINE_COLOR = '#DD5844';
 
 export default function UpdateNameScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    
+    const queryClient = useQueryClient();
     const [name, setName] = useState('');
 
-    const isReady = name.length > 0;
+    const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
+        queryKey: ['profile'],
+        queryFn: getProfile,
+    });
+
+    useEffect(() => {
+        if (profileResponse?.data) {
+            const user = profileResponse.data;
+            const firstName = user.firstName === 'User' ? '' : (user.firstName || '');
+            const lastName = user.lastName === 'None' ? '' : (user.lastName || '');
+            const initialName = `${firstName} ${lastName}`.trim();
+            setName(initialName);
+        }
+    }, [profileResponse]);
+
+    const updateNameMutation = useMutation({
+        mutationFn: updateProfile,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+            Toast.show({
+                type: 'success',
+                text1: 'Profile Updated',
+                text2: 'Your name has been updated successfully.'
+            });
+            navigation.goBack();
+        },
+        onError: (error: any) => {
+            Toast.show({
+                type: 'error',
+                text1: 'Update Failed',
+                text2: error?.message || 'Something went wrong. Please try again.'
+            });
+        }
+    });
+
+    const isReady = name.trim().length > 0 && !updateNameMutation.isPending;
+
+    const handleUpdate = () => {
+        if (!isReady) return;
+
+        const parts = name.trim().split(/\s+/);
+        const firstName = parts[0];
+        const lastName = parts.slice(1).join(' ') || '';
+
+        // Safely construct payload, removing any null, undefined or empty strings 
+        // that might trigger "Invalid request data" validation errors.
+        const payload: any = {};
+
+        if (firstName) payload.firstName = firstName.trim();
+        if (lastName) payload.lastName = lastName.trim();
+        
+        // Include other fields only if they have valid content
+        if (profileResponse?.data?.email) payload.email = profileResponse.data.email;
+        if (profileResponse?.data?.avatarUrl && profileResponse.data.avatarUrl.startsWith('http')) {
+            payload.avatarUrl = profileResponse.data.avatarUrl;
+        }
+        
+        // Use the customerType from profile or fallback to HOUSEHOLD
+        payload.customerType = profileResponse?.data?.customerType || 'HOUSEHOLD';
+
+        console.log('[UpdateName] Sending Patch:', JSON.stringify(payload, null, 2));
+        updateNameMutation.mutate(payload);
+    };
 
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+        <NativeSafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
-                <ScrollView 
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
+                <View style={styles.innerContainer}>
                     <TouchableOpacity 
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
@@ -43,48 +106,79 @@ export default function UpdateNameScreen() {
                         <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
                     </TouchableOpacity>
 
-                    <View style={styles.content}>
-                        <Text style={styles.title}>Update your name</Text>
-                        
-                        <View style={styles.form}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Name</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Enter Full Name"
-                                    placeholderTextColor={COLORS.secondaryGray}
-                                    value={name}
-                                    onChangeText={setName}
-                                />
-                                <View style={styles.underline} />
+                    <ScrollView 
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {isLoadingProfile ? (
+                            <View style={styles.centerContainer}>
+                                <ActivityIndicator size="large" color={COLORS.primary} />
                             </View>
+                        ) : (
+                            <View style={styles.content}>
+                                <Text style={styles.title}>Update your name</Text>
+                                
+                                <View style={styles.form}>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Name</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Enter Full Name"
+                                            placeholderTextColor={COLORS.secondaryGray}
+                                            value={name}
+                                            onChangeText={setName}
+                                            autoCapitalize="words"
+                                        />
+                                        <View style={styles.underline} />
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+                    </ScrollView>
 
+                    {!isLoadingProfile && (
+                        <View style={styles.buttonWrapper}>
                             <TouchableOpacity 
                                 style={[styles.updateButton, !isReady && styles.disabledButton]}
                                 activeOpacity={0.8}
                                 disabled={!isReady}
-                                onPress={() => {
-                                    // Handle update logic
-                                    navigation.goBack();
-                                }}
+                                onPress={handleUpdate}
                             >
-                                <Text style={styles.updateText}>Update</Text>
+                                {updateNameMutation.isPending ? (
+                                    <ActivityIndicator color={COLORS.primaryWhite} />
+                                ) : (
+                                    <Text style={styles.updateText}>Update</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
-                    </View>
-                </ScrollView>
+                    )}
+                </View>
             </KeyboardAvoidingView>
         </NativeSafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: COLORS.primaryWhite,
+    },
     container: {
         flex: 1,
     },
+    innerContainer: {
+        flex: 1,
+        paddingHorizontal: 24,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 100,
+    },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 24,
     },
     backButton: {
         width: 44,
@@ -134,13 +228,16 @@ const styles = StyleSheet.create({
         marginTop: -1,
         marginHorizontal: 4,
     },
+    buttonWrapper: {
+        paddingBottom: Platform.OS === 'ios' ? 10 : 20,
+        backgroundColor: COLORS.primaryWhite,
+    },
     updateButton: {
         backgroundColor: COLORS.primary,
         height: 56,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 350, // Long spacing to match mockup
     },
     disabledButton: {
         opacity: 0.6,
