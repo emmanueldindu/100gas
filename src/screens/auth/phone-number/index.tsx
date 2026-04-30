@@ -17,9 +17,11 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenEnums from '../../../enums/screen-enums';
 import { AuthStackNavigationProp } from '../../../navigation/auth-stack/auth-stack.types';
 import { COLORS } from '../../../constants/colors';
+import { FONT } from '../../../constants/fonts';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { requestOtp } from '../../../service/auth';
+import NavigationHeader from '../../../components/navigation-header';
 
 export default function PhoneNumberScreen() {
     const insets = useSafeAreaInsets();
@@ -29,103 +31,85 @@ export default function PhoneNumberScreen() {
 
     const isReady = phoneNumber.length >= 7; // Allowing 7-10 digits for flexibility
 
-    const handleRequestOtp = async () => {
-        const payloadPhone = `+234${phoneNumber}`;
-        setIsLoading(true);
-        try {
-            await requestOtp(payloadPhone);
-            Toast.show({
-                type: 'success',
-                text1: 'OTP Sent',
-                text2: 'An OTP has been sent to your phone number.'
-            });
-            navigation.navigate(ScreenEnums.OTP, { phoneNumber: payloadPhone });
-        } catch (error: any) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: error?.message || 'Failed to request OTP. Please try again.'
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // const handleRequestOtp = async () => {
+    //     const payloadPhone = `+234${phoneNumber}`;
+    //     setIsLoading(true);
+    //     try {
+    //         await requestOtp(payloadPhone);
+    //         Toast.show({
+    //             type: 'success',
+    //             text1: 'OTP Sent',
+    //             text2: 'An OTP has been sent to your phone number.'
+    //         });
+    //         navigation.navigate(ScreenEnums.OTP, { phoneNumber: payloadPhone });
+    //     } catch (error: any) {
+    //         Toast.show({
+    //             type: 'error',
+    //             text1: 'Error',
+    //             text2: error?.message || 'Failed to request OTP. Please try again.'
+    //         });
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryBlack }}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
-                <ScrollView
+                <ScrollView 
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* Back Button */}
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-                    </TouchableOpacity>
+                    <NavigationHeader 
+                        title="Enter Phone Number" 
+                        onBackPressAction={() => navigation.goBack()}
+                        style={{ marginTop: 10 }}
+                    />
 
-                    {/* Top Image */}
-                    <View style={styles.imageContainer}>
-                        <Image
-                            source={require('../../../assets/images/infobg.png')}
-                            style={styles.image}
-                            contentFit="contain"
-                            cachePolicy="memory-disk"
-                        />
-                    </View>
-
-                    {/* Form Content */}
                     <View style={styles.formContainer}>
-                        <Text style={styles.title}>Enter Phone Number</Text>
+                        <Text style={styles.description}>
+                            We'll send a verification code to the number
+                        </Text>
 
-                        <Text style={styles.label}>Mobile Number</Text>
-
-                        <View style={styles.inputWrapper}>
-                            <View style={styles.countryPicker}>
-                                <Image
-                                    source={{ uri: 'https://flagcdn.com/w40/ng.png' }} // Nigeria flag
-                                    style={styles.flag}
-                                />
-                                <Ionicons name="chevron-down" size={16} color={COLORS.black} style={styles.chevron} />
-                                <Text style={styles.countryCode}>+234</Text>
-                                <View style={styles.divider} />
-                            </View>
-
+                        <View style={styles.inputSection}>
+                            <Text style={styles.label}>Enter your Phone Number</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="000 000 000"
-                                placeholderTextColor={COLORS.secondaryGray}
+                                placeholder="09026190455"
+                                placeholderTextColor={'#2F3338'}
                                 keyboardType="phone-pad"
                                 value={phoneNumber}
                                 onChangeText={setPhoneNumber}
-                                maxLength={10}
+                                autoFocus={true}
                             />
                         </View>
-                        <View style={styles.underline} />
                     </View>
 
-                    {/* Done Button stays inside ScrollView as per your latest change */}
-                    <View style={styles.bottomContainer}>
+                    <View style={styles.footer}>
                         <TouchableOpacity
                             style={[
-                                styles.doneButton,
-                                (!isReady || isLoading) && styles.doneButtonDisabled
+                                styles.signUpButton,
+                                (!isReady || isLoading) && styles.buttonDisabled
                             ]}
-                            onPress={handleRequestOtp}
+                            onPress={() => navigation.navigate(ScreenEnums.OTP, { phoneNumber })} 
                             activeOpacity={0.8}
                             disabled={!isReady || isLoading}
                         >
                             {isLoading ? (
                                 <ActivityIndicator color={COLORS.primaryWhite} />
                             ) : (
-                                <Text style={styles.doneButtonText}>Done</Text>
+                                <Text style={styles.signUpButtonText}>Sign up</Text>
                             )}
                         </TouchableOpacity>
+
+                        <Text style={styles.termsText}>
+                            By Signing Up you agree to our <Text style={styles.termsLink}>Terms</Text> and{' '}
+                            <Text style={styles.termsLink}>Privacy policy</Text>
+                        </Text>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -136,122 +120,71 @@ export default function PhoneNumberScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: COLORS.primaryBlack,
+        paddingHorizontal: 24,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 24,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: COLORS.primaryWhite,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    imageContainer: {
-        width: '100%',
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    image: {
-        width: '100%',
-        height: 400,
+        paddingBottom: 20,
     },
     formContainer: {
-        marginTop: 20,
+        marginTop: 24,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.black,
-        marginBottom: 32,
+    description: {
+        fontSize: 14,
+        color: '#FFFFFF',
+        fontFamily: FONT.garnet_400_regular,
+        lineHeight: 20,
+    },
+    inputSection: {
+        marginTop: 32,
     },
     label: {
-        fontSize: 16,
-        color: COLORS.secondaryGray,
-        marginBottom: 12,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F7F8FA',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        height: 64,
-    },
-    countryPicker: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    flag: {
-        width: 28,
-        height: 20,
-        borderRadius: 4,
-    },
-    chevron: {
-        marginLeft: 8,
-    },
-    countryCode: {
-        fontSize: 18,
-        fontWeight: '500',
-        color: COLORS.black,
-        marginLeft: 8,
-    },
-    divider: {
-        width: 1,
-        height: 24,
-        backgroundColor: '#E0E0E0',
-        marginHorizontal: 12,
+        fontSize: 13,
+        color: COLORS.light_gray,
+        fontFamily: FONT.garnet_400_regular,
+        marginBottom: 8,
     },
     input: {
-        flex: 1,
-        fontSize: 20,
-        color: COLORS.black,
-        fontWeight: '500',
+        width: '100%',
+        height: 56,
+        borderWidth: 1,
+        borderColor: '#C2C2C2',
+        borderRadius: 4,
+        paddingHorizontal: 16,
+        fontSize: 16,
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_500_medium,
     },
-    underline: {
-        height: 2,
-        backgroundColor: COLORS.primary,
-        marginTop: -2, // Pull up to meet the wrapper if needed, or just below
-        marginHorizontal: 2,
-        borderRadius: 1,
+    footer: {
+        marginTop: 'auto',
+        paddingTop: 24,
     },
-    bottomContainer: {
-        // paddingHorizontal: 24,
-        backgroundColor: COLORS.primaryWhite,
-        marginTop:15,
-    },
-    doneButton: {
+    signUpButton: {
         backgroundColor: COLORS.primary,
         height: 56,
-        borderRadius: 12,
+        borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-        marginTop:10
-
     },
-    doneButtonDisabled: {
-        backgroundColor: COLORS.secondaryGray,
-        shadowOpacity: 0,
-        elevation: 0,
+    buttonDisabled: {
+        opacity: 0.5,
     },
-    doneButtonText: {
+    signUpButtonText: {
         color: COLORS.primaryWhite,
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 16,
+        fontFamily: FONT.garnet_500_medium,
+    },
+    termsText: {
+        marginTop: 16,
+        textAlign: 'center',
+        fontSize: 12,
+        color: COLORS.secondaryGray,
+        fontFamily: FONT.garnet_400_regular,
+        lineHeight: 18,
+    },
+    termsLink: {
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_500_medium,
     },
 });

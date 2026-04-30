@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -9,36 +9,139 @@ import {
     Platform,
     ScrollView,
     Pressable,
-    Modal
+    Modal,
+    ActivityIndicator,
+    FlatList,
+    Animated
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { RootStackNavigationProp } from '../../screens.types';
+import { getStatesResult } from '../../../service/locations';
+import { getAddressesResult, updateAddressResult, createAddressResult } from '../../../service/addresses';
+import Toast from 'react-native-toast-message';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const INPUT_BG = '#F5F4F7';
 const UNDERLINE_COLOR = '#DD5844';
 
-const STATES = [
-    'Lagos',
-    'Abuja (FCT)',
-    'Rivers',
-    'Enugu',
-    'Delta'
-];
+// We'll fetch these from the API instead
+const SkeletonItem = () => {
+    const opacity = React.useRef(new Animated.Value(0.3)).current;
+
+    React.useEffect(() => {
+        const animation = Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacity, {
+                    toValue: 0.7,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacity, {
+                    toValue: 0.3,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        animation.start();
+        return () => animation.stop();
+    }, [opacity]);
+
+    return (
+        <View style={styles.skeletonContainer}>
+            <Animated.View style={[styles.skeletonLabel, { opacity }]} />
+            <Animated.View style={[styles.skeletonInput, { opacity }]} />
+            <Animated.View style={[styles.skeletonUnderline, { opacity }]} />
+        </View>
+    );
+};
 
 export default function UpdateLocationScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    
+    const queryClient = useQueryClient();
     const [selectedState, setSelectedState] = useState('');
     const [address, setAddress] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
     const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+    const [addressId, setAddressId] = useState<string | null>(null);
 
-    const isReady = selectedState && address.length > 5;
+    // Fetch states
+    const { data: statesResponse, isLoading: isLoadingStates } = useQuery({
+        queryKey: ['states'],
+        queryFn: getStatesResult,
+        staleTime: 1000 * 60 * 30, // 30 mins
+    });
+
+    // Fetch addresses
+    const { data: addrResponse, isLoading: isLoadingAddress } = useQuery({
+        queryKey: ['addresses'],
+        queryFn: getAddressesResult,
+    });
+
+    const states = statesResponse?.data || [];
+
+    useEffect(() => {
+        if (addrResponse?.success && Array.isArray(addrResponse?.data) && addrResponse.data.length > 0) {
+            const defaultAddr = addrResponse.data.find((a: any) => a.isDefault) || addrResponse.data[0];
+            setAddressId(defaultAddr.id);
+            setAddress(defaultAddr.address || '');
+            setSelectedState(defaultAddr.state || '');
+        }
+    }, [addrResponse]);
+
+    const updateAddressMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (addressId) {
+                return updateAddressResult(addressId, payload);
+            } else {
+                return createAddressResult(payload);
+            }
+        },
+        onSuccess: (res) => {
+            if (res?.success) {
+                queryClient.invalidateQueries({ queryKey: ['addresses'] });
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success',
+                    text2: addressId ? 'Address updated successfully' : 'Address created successfully'
+                });
+                setIsConfirmModalVisible(false);
+                navigation.goBack();
+            }
+        },
+        onError: (err: any) => {
+            console.error('Error saving address', err);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: err?.message || 'Failed to save address'
+            });
+        }
+    });
+
+    const isReady = selectedState && address.length > 5 && !updateAddressMutation.isPending;
 
     const toggleConfirmModal = () => setIsConfirmModalVisible(!isConfirmModalVisible);
+
+    const handleUpdate = () => {
+        setIsConfirmModalVisible(true);
+    };
+
+    const handleConfirmLocation = () => {
+        const payload: any = {
+            label: 'Home',
+            address: address,
+            state: selectedState,
+            latitude: 90,
+            // longitude: 180, // "no longitude for now sha"
+            isDefault: true
+        };
+        
+        updateAddressMutation.mutate(payload);
+    };
 
     return (
         <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
@@ -62,7 +165,14 @@ export default function UpdateLocationScreen() {
                     <View style={styles.content}>
                         <Text style={styles.title}>Enter home address</Text>
                         
-                        <View style={styles.form}>
+                        {isLoadingAddress ? (
+                            <View style={styles.form}>
+                                <SkeletonItem />
+                                <SkeletonItem />
+                                <View style={[styles.updateButton, { opacity: 0.2, marginTop: 250 }]} />
+                            </View>
+                        ) : (
+                            <View style={styles.form}>
                             {/* State Dropdown */}
                             <View style={[styles.inputGroup, { zIndex: showDropdown ? 100 : 1 }]}>
                                 <Text style={styles.label}>State</Text>
@@ -88,35 +198,41 @@ export default function UpdateLocationScreen() {
                                 <View style={styles.underline} />
 
                                 {showDropdown && (
-                                    <>
-                                        <Pressable 
-                                            style={styles.dropdownOverlay} 
-                                            onPress={() => setShowDropdown(false)} 
-                                        />
-                                        <View style={styles.dropdownMenu}>
-                                            {STATES.map((state, index) => (
-                                                <TouchableOpacity 
-                                                    key={state}
-                                                    style={[
-                                                        styles.dropdownItem,
-                                                        selectedState === state && styles.selectedItem,
-                                                        index === STATES.length - 1 && { borderBottomWidth: 0 }
-                                                    ]}
-                                                    onPress={() => {
-                                                        setSelectedState(state);
-                                                        setShowDropdown(false);
-                                                    }}
-                                                >
-                                                    <Text style={[
-                                                        styles.itemText,
-                                                        selectedState === state && styles.selectedItemText
-                                                    ]}>
-                                                        {state}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </>
+                                    <View style={styles.dropdownMenu}>
+                                        {isLoadingStates ? (
+                                            <View style={{ padding: 20, alignItems: 'center' }}>
+                                                <ActivityIndicator color={COLORS.primary} />
+                                            </View>
+                                        ) : (
+                                            <FlatList
+                                                data={states}
+                                                keyExtractor={(item) => item.id}
+                                                renderItem={({ item, index }) => (
+                                                    <TouchableOpacity 
+                                                        style={[
+                                                            styles.dropdownItem,
+                                                            selectedState === item.name && styles.selectedItem,
+                                                            index === states.length - 1 && { borderBottomWidth: 0 }
+                                                        ]}
+                                                        onPress={() => {
+                                                            setSelectedState(item.name);
+                                                            setShowDropdown(false);
+                                                        }}
+                                                    >
+                                                        <Text style={[
+                                                            styles.itemText,
+                                                            selectedState === item.name && styles.selectedItemText
+                                                        ]}>
+                                                            {item.name}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                                style={{ maxHeight: 250 }}
+                                                nestedScrollEnabled={true}
+                                                showsVerticalScrollIndicator={true}
+                                            />
+                                        )}
+                                    </View>
                                 )}
                             </View>
 
@@ -140,11 +256,12 @@ export default function UpdateLocationScreen() {
                                 style={[styles.updateButton, !isReady && styles.disabledButton]}
                                 activeOpacity={0.8}
                                 disabled={!isReady}
-                                onPress={toggleConfirmModal}
+                                onPress={handleUpdate}
                             >
                                 <Text style={styles.updateText}>Update</Text>
                             </TouchableOpacity>
                         </View>
+                        )}
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -159,20 +276,22 @@ export default function UpdateLocationScreen() {
                 <Pressable style={styles.modalOverlay} onPress={toggleConfirmModal}>
                     <View style={styles.confirmModalContent}>
                         <View style={styles.modalInner}>
-                            <Text style={styles.confirmTitle}>Mercyland Estate, Owerri</Text>
+                            <Text style={styles.confirmTitle}>{address}</Text>
                             <Text style={styles.confirmSubtitle}>
-                                You gas will be delivered to Mercyland Estate, Owerri whenever you order for gas refill.
+                                Your gas will be delivered to {address} whenever you order for gas refill.
                             </Text>
 
                             <TouchableOpacity 
                                 style={styles.confirmButton}
                                 activeOpacity={0.8}
-                                onPress={() => {
-                                    toggleConfirmModal();
-                                    navigation.goBack();
-                                }}
+                                disabled={updateAddressMutation.isPending}
+                                onPress={handleConfirmLocation}
                             >
-                                <Text style={styles.confirmButtonText}>Confirm location</Text>
+                                {updateAddressMutation.isPending ? (
+                                    <ActivityIndicator color={COLORS.primaryWhite} />
+                                ) : (
+                                    <Text style={styles.confirmButtonText}>Confirm location</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -356,5 +475,30 @@ const styles = StyleSheet.create({
         color: COLORS.primaryWhite,
         fontSize: 16,
         fontWeight: '600',
+    },
+    skeletonContainer: {
+        marginBottom: 32,
+        alignItems: 'center',
+    },
+    skeletonLabel: {
+        width: 60,
+        height: 16,
+        backgroundColor: '#EEEEEE',
+        borderRadius: 4,
+        marginBottom: 12,
+    },
+    skeletonInput: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#F5F4F7',
+        borderRadius: 12,
+    },
+    skeletonUnderline: {
+        width: '100%',
+        height: 1,
+        backgroundColor: UNDERLINE_COLOR,
+        opacity: 0.3,
+        marginTop: -1,
+        paddingHorizontal: 4,
     },
 });

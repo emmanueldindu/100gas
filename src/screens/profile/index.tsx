@@ -90,13 +90,13 @@ export default function ProfileScreen() {
                         iconName="home-outline" 
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_LOCATION)}
                     />
-
+{/* 
                     <SectionHeader title="Gas cylinder details" />
                     <ListItem 
                         title="Gas cylinder size" 
                         customIcon={<MaterialCommunityIcons name="propane-tank-outline" size={22} color={COLORS.darkGray} />}
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER)}
-                    />
+                    /> */}
 
                     <SectionHeader title="Offers and pomo" />
                     <ListItem 

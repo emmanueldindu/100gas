@@ -4,7 +4,7 @@
     "slug": "100gas",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/icons/logoblack.png",
+    "icon": "./src/assets/icons/logo.png",
     "scheme": "100gas",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -15,25 +15,25 @@
     "android": {
       "package": "com.theoneglobal.hundredgas",
       "adaptiveIcon": {
-        "backgroundColor": "#DD5844",
-        "foregroundImage": "./src/assets/icons/logoblack.png"
+        "backgroundColor": "#121212",
+        "foregroundImage": "./src/assets/icons/logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./src/assets/icons/logoblack.png"
+      "favicon": "./src/assets/icons/logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./src/assets/icons/logo.png",
-          "imageWidth": 171,
+          "image": "./src/assets/icons/illustration.png",
+          "imageWidth": 350,
           "resizeMode": "contain",
-          "backgroundColor": "#DD5844"
+          "backgroundColor": "#121212"
         }
       ],
       "expo-asset"

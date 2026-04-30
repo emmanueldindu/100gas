@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackNavigationProp } from '../../screens/screens.types';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
 
 export default function InfoScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
@@ -48,7 +49,7 @@ export default function InfoScreen() {
             <View style={styles.contentContainer}>
                 <Animated.View style={[styles.imageContainer, animatedStyle]}>
                     <Image 
-                        source={require('../../assets/images/infobg.png')} 
+                        source={require('../../assets/images/info.png')} 
                         style={styles.logo}
                         contentFit="contain"
                         onLoad={() => setImageLoaded(true)}
@@ -86,7 +87,7 @@ export default function InfoScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: '#121212',
         paddingHorizontal: 20,
     },
     contentContainer: {
@@ -100,18 +101,18 @@ const styles = StyleSheet.create({
     },
     logo: {
         width: '100%',
-        height: 480, // Slightly reduced to fit buttons better
+        height: 400, 
     },
     textContainer: {
-        marginTop: -20,
+        marginTop: '5%',
         alignItems: 'center',
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
+        fontSize: 24,
         textAlign: 'center',
-        color: '#2D2D2D', // Slightly softer black for premium feel
+        color: COLORS.primaryWhite,
         lineHeight: 34,
+        fontFamily: FONT.garnet_500_medium,
     },
     buttonContainer: {
         gap: 12,
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     createButton: {
         backgroundColor: COLORS.primary,
         height: 56,
-        borderRadius: 12,
+        borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: COLORS.primary,
@@ -131,21 +132,21 @@ const styles = StyleSheet.create({
     },
     createButtonText: {
         color: COLORS.primaryWhite,
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 16,
+        fontFamily: FONT.garnet_500_medium,
     },
     signInButton: {
         backgroundColor: 'transparent',
         height: 56,
-        borderRadius: 12,
+        borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        borderColor: '#74757C',
     },
     signInButtonText: {
-        color: COLORS.black,
-        fontSize: 18,
-        fontWeight: '600',
+        color: COLORS.primaryWhite,
+        fontSize: 16,
+        fontFamily: FONT.garnet_500_medium,
     },
 });

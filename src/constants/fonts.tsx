@@ -1,16 +1,19 @@
 export const FONT = {
-    // Regular (400)
-    regular: 'System',
-
     // Light (300)
-    light: 'System',
+    garnet_300_light: 'Garnett-Light',
+
+    // Regular (400)
+    garnet_400_regular: 'Garnett-Regular',
+
+    // Medium (500)
+    garnet_500_medium: 'Garnett-Medium',
 
     // SemiBold (600)
-    semibold: 'System',
+    garnet_600_semibold: 'Garnett-Semibold',
 
     // Bold (700)
-    bold: 'System',
+    garnet_700_bold: 'Garnett-Bold',
 
-    // ExtraBold (800)
-    extrabold: 'System',
+    // Black (900)
+    garnet_900_black: 'Garnett-Black',
 } as const;
