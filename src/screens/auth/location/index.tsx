@@ -18,11 +18,10 @@ import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-conte
 import { Ionicons } from '@expo/vector-icons';
 import ScreenEnums from '../../../enums/screen-enums';
 import { COLORS } from '../../../constants/colors';
+import { FONT } from '../../../constants/fonts';
 import { AuthStackNavigationProp, AuthStackParamList } from '../../../navigation/auth-stack/auth-stack.types';
 import { getStatesResult } from '../../../service/locations';
-
-const INPUT_BG = '#F5F4F7';
-const UNDERLINE_COLOR = '#DD5844';
+import NavigationHeader from '@/src/components/navigation-header';
 
 export default function LocationScreen() {
     const insets = useSafeAreaInsets();
@@ -59,14 +58,14 @@ export default function LocationScreen() {
             ...route.params?.payload,
             state: selectedState,
             address: address,
-            latitude: 6.5244,  // Default Lagos Latitude
-            longitude: 3.3792, // Default Lagos Longitude
+            latitude: 6.5244,
+            longitude: 3.3792,
         };
         navigation.navigate(ScreenEnums.GAS_SIZE, { payload } as any);
     };
 
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryBlack }}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
@@ -76,75 +75,60 @@ export default function LocationScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Back Button */}
-                    <TouchableOpacity 
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-                    </TouchableOpacity>
+                    <NavigationHeader
+                        title="Delivery Address" 
+                        onBackPressAction={() => navigation.goBack()}
+                        style={{ marginTop: 10 }}
+                    />
 
                     <View style={styles.content}>
-                        <Text style={styles.title}>Where is the gas being{'\n'}delivered to?</Text>
+                        <Text style={styles.description}>
+                            Set the address you want your orders delivered to.
+                        </Text>
                         
                         <View style={styles.form}>
-                            {/* State Dropdown */}
-                            <View style={[styles.inputGroup, { zIndex: showDropdown ? 100 : 1 }]}>
+                            {/* State Selector */}
+                            <View style={styles.inputGroup}>
                                 <Text style={styles.label}>State</Text>
                                 <TouchableOpacity 
-                                    style={styles.dropdownTrigger}
+                                    style={styles.selector}
                                     activeOpacity={0.7}
                                     onPress={() => setShowDropdown(!showDropdown)}
                                 >
-                                    <View style={styles.dropdownContent}>
-                                        <Text style={[
-                                            styles.dropdownText,
-                                            !selectedState && { color: COLORS.secondaryGray }
-                                        ]}>
-                                            {selectedState || 'Select state'}
-                                        </Text>
-                                        <Ionicons 
-                                            name={showDropdown ? "chevron-up" : "chevron-down"} 
-                                            size={20} 
-                                            color={COLORS.black} 
-                                        />
-                                    </View>
+                                    <Text style={[
+                                        styles.selectorText,
+                                        !selectedState && { color: '#74757C' }
+                                    ]}>
+                                        {selectedState || 'Select state'}
+                                    </Text>
+                                    <Ionicons 
+                                        name="chevron-down" 
+                                        size={20} 
+                                        color="#FFFFFF" 
+                                    />
                                 </TouchableOpacity>
-                                <View style={styles.underline} />
 
                                 {showDropdown && (
                                     <View style={styles.dropdownMenu}>
                                         {isLoadingStates ? (
-                                            <View style={{ padding: 20, alignItems: 'center' }}>
-                                                <ActivityIndicator color={COLORS.primary} />
-                                            </View>
+                                            <ActivityIndicator color={COLORS.primary} style={{ padding: 10 }} />
                                         ) : (
                                             <FlatList
                                                 data={states}
                                                 keyExtractor={(item) => item.id}
-                                                renderItem={({ item, index }) => (
+                                                renderItem={({ item }) => (
                                                     <TouchableOpacity 
-                                                        style={[
-                                                            styles.dropdownItem,
-                                                            selectedState === item.name && styles.selectedItem,
-                                                            index === states.length - 1 && { borderBottomWidth: 0 }
-                                                        ]}
+                                                        style={styles.dropdownItem}
                                                         onPress={() => {
                                                             setSelectedState(item.name);
                                                             setShowDropdown(false);
                                                         }}
                                                     >
-                                                        <Text style={[
-                                                            styles.itemText,
-                                                            selectedState === item.name && styles.selectedItemText
-                                                        ]}>
-                                                            {item.name}
-                                                        </Text>
+                                                        <Text style={styles.itemText}>{item.name}</Text>
                                                     </TouchableOpacity>
                                                 )}
-                                                style={{ maxHeight: 250 }}
+                                                style={{ maxHeight: 200 }}
                                                 nestedScrollEnabled={true}
-                                                showsVerticalScrollIndicator={true}
                                             />
                                         )}
                                     </View>
@@ -154,28 +138,33 @@ export default function LocationScreen() {
                             {/* Address Input */}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Address</Text>
-                                <View style={styles.inputWrapper}>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Enter your address"
-                                        placeholderTextColor={COLORS.secondaryGray}
-                                        value={address}
-                                        onChangeText={setAddress}
-                                        multiline={false}
-                                    />
-                                </View>
-                                <View style={styles.underline} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your address"
+                                    placeholderTextColor="#2F3338"
+                                    value={address}
+                                    onChangeText={setAddress}
+                                    autoCapitalize="words"
+                                />
                             </View>
 
-                            <TouchableOpacity 
-                                style={[styles.continueButton, !isReady && styles.disabledButton]}
-                                activeOpacity={0.8}
-                                disabled={!isReady}
-                                onPress={handleContinue}
-                            >
-                                <Text style={styles.continueText}>Continue</Text>
+                            {/* Dummy GPS Link */}
+                            <TouchableOpacity style={styles.gpsLink} activeOpacity={0.7}>
+                                <Text style={styles.gpsText}>Use GPS Location Instead</Text>
+                                <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
                             </TouchableOpacity>
                         </View>
+                    </View>
+
+                    <View style={styles.footer}>
+                        <TouchableOpacity 
+                            style={[styles.continueButton, !isReady && styles.disabledButton]}
+                            activeOpacity={0.8}
+                            disabled={!isReady}
+                            onPress={handleContinue}
+                        >
+                            <Text style={styles.continueText}>Continue</Text>
+                        </TouchableOpacity>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -190,134 +179,103 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         paddingHorizontal: 24,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: COLORS.primaryWhite,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        marginTop: 10,
+        paddingBottom: 20,
     },
     content: {
-        paddingTop: 40,
+        marginTop: 24,
     },
-    title: {
-        fontSize: 23,
-        fontWeight: '600',
-        color: '#2F3338',
-        lineHeight: 36,
-        marginBottom: 48,
+    description: {
+        fontSize: 14,
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_400_regular,
+        lineHeight: 20,
+        marginBottom: 32,
     },
     form: {
         width: '100%',
     },
     inputGroup: {
-        marginBottom: 32,
+        marginBottom: 24,
     },
     label: {
-        fontSize: 16,
-        color: COLORS.black,
-        fontWeight: '500',
-        marginBottom: 12,
-        textAlign: 'center',
+        fontSize: 14,
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_400_regular,
+        marginBottom: 8,
     },
-    dropdownTrigger: {
-        backgroundColor: INPUT_BG,
-        borderRadius: 12,
-        height: 56,
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-    },
-    dropdownContent: {
+    selector: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        height: 56,
+        borderWidth: 1,
+        borderColor: '#C2C2C2',
+        borderRadius: 4,
+        paddingHorizontal: 16,
     },
-    dropdownText: {
+    selectorText: {
         fontSize: 16,
-        color: COLORS.black,
-    },
-    dropdownOverlay: {
-        position: 'absolute',
-        top: -500,
-        left: -100,
-        right: -100,
-        bottom: -1000,
-        zIndex: 500,
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_400_regular,
     },
     dropdownMenu: {
-        position: 'absolute',
-        top: 90,
-        left: 0,
-        right: 0,
-        backgroundColor: COLORS.primaryWhite,
-        borderRadius: 12,
+        marginTop: 4,
+        backgroundColor: '#1E1E1E',
+        borderRadius: 4,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
+        borderColor: '#2F3338',
+        maxHeight: 200,
         zIndex: 1000,
-        padding: 8,
-        maxHeight: 280,
     },
     dropdownItem: {
-        height: 56,
-        justifyContent: 'center',
-        paddingHorizontal: 16,
+        padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F5',
-    },
-    selectedItem: {
-        backgroundColor: '#FFF5F4', // Very light red shade for selection
-        borderRadius: 8,
+        borderBottomColor: '#2F3338',
     },
     itemText: {
+        color: COLORS.primaryWhite,
         fontSize: 16,
-        color: COLORS.black,
-    },
-    selectedItemText: {
-        fontWeight: '600',
-        color: COLORS.black,
-    },
-    inputWrapper: {
-        backgroundColor: INPUT_BG,
-        borderRadius: 12,
-        height: 56,
-        justifyContent: 'center',
-        paddingHorizontal: 16,
+        fontFamily: FONT.garnet_400_regular,
     },
     input: {
+        height: 56,
+        borderWidth: 1,
+        borderColor: '#C2C2C2',
+        borderRadius: 4,
+        paddingHorizontal: 16,
         fontSize: 16,
-        color: COLORS.black,
-        textAlign: 'center',
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_400_regular,
     },
-    underline: {
-        height: 1,
-        backgroundColor: UNDERLINE_COLOR,
-        marginTop: -1,
-        marginHorizontal: 4,
+    gpsLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 8,
+    },
+    gpsText: {
+        fontSize: 14,
+        color: COLORS.primaryWhite,
+        fontFamily: FONT.garnet_400_regular,
+        marginRight: 8,
+    },
+    footer: {
+        marginTop: 'auto',
+        paddingTop: 40,
     },
     continueButton: {
         backgroundColor: COLORS.primary,
         height: 56,
-        borderRadius: 12,
+        borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 40,
     },
     disabledButton: {
-        opacity: 0.6,
+        opacity: 0.5,
     },
     continueText: {
         color: COLORS.primaryWhite,
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 16,
+        fontFamily: FONT.garnet_500_medium,
     },
 });
