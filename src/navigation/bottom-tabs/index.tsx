@@ -8,6 +8,7 @@ import HomeScreen from '../../screens/home';
 import OrderHistoryScreen from '../../screens/order-history';
 import ProfileScreen from '../../screens/profile';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
 
 const Tab = createBottomTabNavigator();
 
@@ -15,7 +16,7 @@ interface TabConfig {
     name: string;
     component: React.ComponentType<any>;
     label: string;
-    icon: (focused: boolean) => any; // Returns the asset source
+    icon: (focused: boolean) => any;
 }
 
 const TABS: TabConfig[] = [
@@ -54,24 +55,28 @@ export default function BottomTabs() {
     const tabBarOptions = {
         headerShown: false,
         tabBarStyle: {
-            backgroundColor: COLORS.primaryWhite,
-            borderTopWidth: 1,
-            borderTopColor: '#F5F4F7',
+            backgroundColor: '#1E1E1E',
+            borderTopWidth: 0,
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12,
             height: tabBarHeight,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 20,
             paddingTop: 12,
-            paddingHorizontal: 40, // Bring items significantly closer to the center
             elevation: 0,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0.1,
             shadowRadius: 10,
+            position: 'absolute', // Ensures the radius is visible if there's a background behind
+            left: 0,
+            right: 0,
+            bottom: 0,
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: '#A0A0A0',
+        tabBarActiveTintColor: '#D0D5DD',
+        tabBarInactiveTintColor: '#74757C',
         tabBarLabelStyle: {
             fontSize: 12,
-            fontWeight: '500' as any,
+            fontFamily: FONT.garnet_400_regular,
             marginTop: 4,
         },
     };
@@ -95,8 +100,8 @@ export default function BottomTabs() {
                                 source={_tab.icon(focused)} 
                                 style={[
                                     styles.icon,
-                                    // Tint the fallback order icon if it's active so it still looks red
-                                    _tab.name === ScreenEnums.ORDER_HISTORY && focused && { tintColor: COLORS.primary }
+                                    // Tint the fallback order icon if it's active so it still looks correct
+                                    _tab.name === ScreenEnums.ORDER_HISTORY && focused && { tintColor: '#D0D5DD' }
                                 ]} 
                                 resizeMode="contain"
                             />

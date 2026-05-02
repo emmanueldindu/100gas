@@ -2,10 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Animated, Easing, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
+import PromoCarousel from '../../components/home/PromoCarousel';
+import GasHub from '../../components/home/GasHub';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // Helper: generate an SVG arc path from startAngle to endAngle (in degrees)
 // The arc goes clockwise. 0° = top of the circle.
@@ -50,110 +54,142 @@ export default function HomeScreen() {
         }).start();
     }, []);
 
-    // Full arc path (used for the total arc length calculation)
     const fullArcPath = describeArc(CENTER, CENTER, RADIUS, ARC_START, ARC_END);
-
-    // Calculate total arc length: (270/360) * 2πR
     const TOTAL_ARC_LENGTH = (TOTAL_SWEEP / 360) * 2 * Math.PI * RADIUS;
 
-    // Animated dashoffset: starts fully hidden, animates to reveal the filled portion
     const strokeDashoffset = animatedValue.interpolate({
         inputRange: [0, 1],
         outputRange: [TOTAL_ARC_LENGTH, 0],
     });
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar barStyle="dark-content" backgroundColor="white" />
-            <View style={styles.scrollViewBackground}>
-                <View 
-                    // showsVerticalScrollIndicator={false}
-                    // contentContainerStyle={styles.scrollContent}
-                >
-                {/* Header Container */}
-                <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                        <View style={styles.userInfo}>
-                            <View style={styles.imageBorder}>
-                                <Image 
-                                    source={require('../../assets/images/user.png')} 
-                                    style={styles.profileImage}
-                                />
-                            </View>
-                            <View style={styles.greetingContainer}>
-                                <Text style={styles.greetingText}>Good Morning 🌞</Text>
-                                <Text style={styles.userName}>Miracle Emeka</Text>
-                            </View>
+        <SafeAreaView style={styles.container} edges = {['top']}>
+            <StatusBar barStyle="light-content" backgroundColor="#1E1E1E" />
+            <View style={styles.header}>
+                <View style={styles.headerContent}>
+                    <View style={styles.userInfo}>
+                        <View style={styles.avatarContainer}>
+                            <Text style={styles.avatarText}>ME</Text>
                         </View>
-                        <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
-                            <Ionicons name="notifications-outline" size={24} color={COLORS.main_dark} />
-                        </TouchableOpacity>
+                        <View style={styles.greetingContainer}>
+                            <Text style={styles.greetingText}>
+                                <Text style={styles.helloText}>Hello, </Text>
+                                Miracle
+                            </Text>
+                        </View>
                     </View>
+                    <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+                        <Image resizeMode='contain' source={require('../../assets/icons/notification.png')} style={styles.notificationIcon} />
+                    </TouchableOpacity>
                 </View>
+            </View>
 
-                {/* Main scrollable content below header */}
-                <View style={styles.mainContent}>
-
-                {/* Gas Level Section */}
-                <View style={styles.gasLevelWrapper}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={styles.mainContent}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {/* Gas Level Card */}
+                <View style={styles.card}>
                     <View style={styles.ringContainer}>
-                        <View style={styles.ringShadow}>
-                            <Svg width={SVG_SIZE} height={SVG_SIZE} viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}>
-                                <Defs>
-                                    {/* Gradient: lighter green at start → deeper green at end */}
-                                    <LinearGradient id="gasGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <Stop offset="0%" stopColor="#A8F59C" stopOpacity="1" />
-                                        <Stop offset="35%" stopColor="#6AE85E" stopOpacity="1" />
-                                        <Stop offset="70%" stopColor="#45D63B" stopOpacity="1" />
-                                        <Stop offset="100%" stopColor="#2DBE22" stopOpacity="1" />
-                                    </LinearGradient>
-                                </Defs>
-
-                                {/* Background track (very faint) */}
-                                <Path
-                                    d={fullArcPath}
-                                    stroke="#E8E8E8"
-                                    strokeWidth={STROKE_WIDTH}
-                                    fill="none"
-                                    strokeLinecap="round"
-                                    opacity={0.3}
-                                />
-
-                                {/* Animated progress arc */}
-                                <AnimatedPath
-                                    d={fullArcPath}
-                                    stroke="url(#gasGrad)"
-                                    strokeWidth={STROKE_WIDTH}
-                                    fill="none"
-                                    strokeLinecap="round"
-                                    strokeDasharray={TOTAL_ARC_LENGTH}
-                                    strokeDashoffset={strokeDashoffset}
-                                />
-                            </Svg>
-                        </View>
-                        
-                        {/* Gas Cylinder Image */}
+                        <Svg width={180} height={180} viewBox="0 0 180 180">
+                            <Defs>
+                                <LinearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <Stop offset="0%" stopColor="#FFFFFF" />
+                                    <Stop offset="100%" stopColor="#FFFFFF" />
+                                </LinearGradient>
+                            </Defs>
+                            {/* Background Track */}
+                            <Circle
+                                cx="90"
+                                cy="90"
+                                r={70}
+                                stroke="#2F3338"
+                                strokeWidth="16"
+                                fill="none"
+                            />
+                            {/* Progress Arc */}
+                            <AnimatedCircle
+                                cx="90"
+                                cy="90"
+                                r={70}
+                                stroke="#FFFFFF"
+                                strokeWidth="16"
+                                fill="none"
+                                strokeDasharray={Math.PI * 2 * 70}
+                                strokeDashoffset={animatedValue.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [Math.PI * 2 * 70, 0],
+                                })}
+                                strokeLinecap="round"
+                                transform="rotate(-90, 90, 90)"
+                            />
+                        </Svg>
                         <Image 
                             source={require('../../assets/images/gasimg.png')}
-                            style={styles.largeGasImage}
+                            style={styles.gasCylinderImage}
                             resizeMode="contain"
                         />
                     </View>
 
-                    <View style={styles.gasStatusContainer}>
-                        <View style={styles.gasLevelTitleRow}>
-                            <Image source={require('../../assets/icons/fire.png')} style={styles.fireIcon} />
-                            <Text style={styles.gasLevelTitle}>Gas Level</Text>
-                        </View>
-                        <Text style={styles.gasStatusText}>You're good!</Text>
-                        <Text style={styles.gasStatusSubtext}>Estimated 18 days of gas left</Text>
+                    <View style={styles.statusInfo}>
+                        <Text style={styles.statusTitle}>You're good!</Text>
+                        <Text style={styles.statusSubtitle}>Estimated 18 days of gas left</Text>
                     </View>
-                </View>
+
+                    <TouchableOpacity style={styles.refillButton} activeOpacity={0.8}>
+                        <Text style={styles.refillButtonText}>Refill Gas</Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Other components will follow */}
+                {/* Quick Actions Section */}
+                <View style={styles.quickActionsSection}>
+                    <Text style={styles.sectionTitle}>Quick Actions</Text>
+                    <View style={styles.quickActionsContainer}>
+                        <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.7}>
+                            <View style={styles.actionIconCircle}>
+                                <Image 
+                                    source={require('../../assets/icons/call.png')} 
+                                    style={styles.actionIcon} 
+                                    resizeMode="contain" 
+                                />
+                            </View>
+                            <Text style={styles.actionText}>Order by{"\n"}Phone Call</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.7}>
+                            <View style={styles.actionIconCircle}>
+                                <Image 
+                                    source={require('../../assets/icons/message.png')} 
+                                    style={styles.actionIcon} 
+                                    resizeMode="contain" 
+                                />
+                            </View>
+                            <Text style={styles.actionText}>Chat with Us</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.7}>
+                            <View style={styles.actionIconCircle}>
+                                <Image 
+                                    source={require('../../assets/icons/rotate.png')} 
+                                    style={styles.actionIcon} 
+                                    resizeMode="contain" 
+                                />
+                            </View>
+                            <Text style={styles.actionText}>Reorder</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+
+                {/* Promo Carousel */}
+                <PromoCarousel />
+
+                {/* Gas Hub Section */}
+                <GasHub />
+
+                {/* Bottom Gap to allow scrolling above the Bottom Tab bar */}
+                <View style={{ height: 100 }} />
+            </ScrollView>
         </SafeAreaView>
     );
 }
@@ -161,133 +197,158 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
-    },
-    scrollViewBackground: {
-        flex: 1,
-        backgroundColor: '#FFF4F6',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        backgroundColor: '#FFF4F6',
+        backgroundColor: '#1E1E1E',
     },
     header: {
-        backgroundColor: 'white',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        backgroundColor: '#1E1E1E',
         paddingTop: 10,
         paddingBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.05,
-        shadowRadius: 15,
-        elevation: 8,
+        paddingHorizontal: 20,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginTop: 20,
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-    },
-    mainContent: {
-        paddingHorizontal: 20,
-        marginTop: 40, // Increased margin to push everything down
     },
     userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    imageBorder: {
-        width: 66,
-        height: 66,
-        borderRadius: 33,
-        borderWidth: 1.5,
-        borderColor: '#DD5844',
+    avatarContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#B190B6',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    profileImage: {
-        width: 58,
-        height: 58,
-        borderRadius: 29,
+    avatarText: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
     },
     greetingContainer: {
         marginLeft: 12,
     },
     greetingText: {
-        fontSize: 14,
-        color: '#74757C',
-        marginBottom: 2,
+        fontSize: 16,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
-    userName: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+    helloText: {
+        fontFamily: FONT.garnet_300_light,
+        color: '#D0D5DD',
     },
     notificationButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: COLORS.primaryWhite,
+        width: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        elevation: 2,
     },
-    gasLevelWrapper: {
+    notificationIcon: {
+        width: 24,
+        height: 24,
+    },
+    mainContent: {
+        flex: 1,
+        backgroundColor: '#121212',
+    },
+    scrollContent: {
+        paddingBottom: 20, // Bottom gap View handles the rest
+        paddingHorizontal: 20,
+        paddingTop: 24,
+    },
+    card: {
+        backgroundColor: '#000000',
+        borderRadius: 16,
+        padding: 24,
         alignItems: 'center',
-        marginTop: 30, // Pushed further down
+        borderWidth: 1,
+        borderColor: '#2F3338',
     },
     ringContainer: {
-        width: SVG_SIZE,
-        height: SVG_SIZE,
+        width: 180,
+        height: 180,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
+        marginBottom: 24,
     },
-    ringShadow: {
+    gasCylinderImage: {
+        width: 80,
+        height: 120,
         position: 'absolute',
-        top: 0,
-        shadowColor: '#54DD4D',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 25,
     },
-    largeGasImage: {
-        width: 160,
-        height: 240,
-        position: 'absolute',
-        bottom: 40,
-    },
-    gasStatusContainer: {
+    statusInfo: {
         alignItems: 'center',
-        marginTop: 12,
+        marginBottom: 24,
     },
-    gasLevelTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    statusTitle: {
+        fontSize: 24,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
         marginBottom: 8,
     },
-    fireIcon: {
-        width: 18,
-        height: 18,
-        marginRight: 6,
-        resizeMode: 'contain',
-    },
-    gasLevelTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: COLORS.main_dark,
-    },
-    gasStatusText: {
-        fontSize: 15,
-        color: COLORS.main_dark,
-        fontWeight: '500',
-        marginBottom: 2,
-    },
-    gasStatusSubtext: {
+    statusSubtitle: {
         fontSize: 14,
-        color: '#74757C',
+        fontFamily: FONT.garnet_400_regular,
+        color: '#D0D5DD',
+    },
+    refillButton: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 48,
+        borderRadius: 30,
+        alignItems: 'center',
+    },
+    refillButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
+    },
+    quickActionsSection: {
+        marginTop: 40,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+        marginBottom: 16,
+    },
+    quickActionsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    quickActionCard: {
+        width: '31%',
+        aspectRatio: 1,
+        backgroundColor: '#000000',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#2F3338',
+        padding: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    actionIconCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#1E1E1E',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    actionIcon: {
+        width: 24,
+        height: 24,
+    },
+    actionText: {
+        fontSize: 12,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+        textAlign: 'center',
+        lineHeight: 16,
     },
 });
