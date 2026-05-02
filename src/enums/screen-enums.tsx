@@ -38,6 +38,7 @@ const ScreenEnums = {
     SUPPORT_CALL: 'SUPPORT_CALL',
     SUPPORT_FAQS: 'SUPPORT_FAQS',
     DELETE_ACCOUNT: 'DELETE_ACCOUNT',
+    PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',
 } as const;
 
 export default ScreenEnums;

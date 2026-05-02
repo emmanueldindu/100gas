@@ -8,41 +8,17 @@ import { FONT } from '../../constants/fonts';
 import PromoCarousel from '../../components/home/PromoCarousel';
 import GasHub from '../../components/home/GasHub';
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+import { useNavigation } from '@react-navigation/native';
+import { RootStackNavigationProp } from '../screens.types';
+import ScreenEnums from '../../enums/screen-enums';
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-// Helper: generate an SVG arc path from startAngle to endAngle (in degrees)
-// The arc goes clockwise. 0° = top of the circle.
-function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
-    const start = polarToCartesian(cx, cy, r, endAngle);
-    const end = polarToCartesian(cx, cy, r, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-}
-
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-    const angleRad = ((angleDeg - 90) * Math.PI) / 180.0;
-    return {
-        x: cx + r * Math.cos(angleRad),
-        y: cy + r * Math.sin(angleRad),
-    };
-}
-
-// Config
-const SVG_SIZE = 360;
-const CENTER = SVG_SIZE / 2;
-const RADIUS = 150;
-const STROKE_WIDTH = 26;
-
-// The arc spans from 135° to 405° (i.e. 270° total sweep, open at bottom)
-const ARC_START = 135;
-const ARC_END = 405;
-const TOTAL_SWEEP = ARC_END - ARC_START; // 270°
 
 // Gas level: 0.0 to 1.0 (0.65 = 65% full)
 const GAS_LEVEL = 0.65;
 
 export default function HomeScreen() {
+    const navigation = useNavigation<RootStackNavigationProp>();
     const animatedValue = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -54,16 +30,8 @@ export default function HomeScreen() {
         }).start();
     }, []);
 
-    const fullArcPath = describeArc(CENTER, CENTER, RADIUS, ARC_START, ARC_END);
-    const TOTAL_ARC_LENGTH = (TOTAL_SWEEP / 360) * 2 * Math.PI * RADIUS;
-
-    const strokeDashoffset = animatedValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [TOTAL_ARC_LENGTH, 0],
-    });
-
     return (
-        <SafeAreaView style={styles.container} edges = {['top']}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor="#1E1E1E" />
             <View style={styles.header}>
                 <View style={styles.headerContent}>
@@ -99,7 +67,6 @@ export default function HomeScreen() {
                                     <Stop offset="100%" stopColor="#FFFFFF" />
                                 </LinearGradient>
                             </Defs>
-                            {/* Background Track */}
                             <Circle
                                 cx="90"
                                 cy="90"
@@ -108,7 +75,6 @@ export default function HomeScreen() {
                                 strokeWidth="16"
                                 fill="none"
                             />
-                            {/* Progress Arc */}
                             <AnimatedCircle
                                 cx="90"
                                 cy="90"
@@ -137,7 +103,11 @@ export default function HomeScreen() {
                         <Text style={styles.statusSubtitle}>Estimated 18 days of gas left</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.refillButton} activeOpacity={0.8}>
+                    <TouchableOpacity 
+                        style={styles.refillButton} 
+                        activeOpacity={0.8}
+                        onPress={() => navigation.navigate(ScreenEnums.REFILL_GAS)}
+                    >
                         <Text style={styles.refillButtonText}>Refill Gas</Text>
                     </TouchableOpacity>
                 </View>

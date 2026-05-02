@@ -21,6 +21,7 @@ import SupportChatScreen from '../screens/support/chat';
 import SupportCallScreen from '../screens/support/call';
 import SupportFaqsScreen from '../screens/support/faqs';
 import DeleteAccountScreen from '../screens/profile/delete-account';
+import PaymentSuccessScreen from '../screens/payment-success';
 
 // Stacks
 import AuthStack from './auth-stack';
@@ -104,6 +105,7 @@ export default function Navigation({ initialRoute, onReady }: { initialRoute: In
                     <Stack.Screen name={ScreenEnums.SUPPORT_CALL} component={SupportCallScreen} />
                     <Stack.Screen name={ScreenEnums.SUPPORT_FAQS} component={SupportFaqsScreen} />
                     <Stack.Screen name={ScreenEnums.DELETE_ACCOUNT} component={DeleteAccountScreen} />
+                    <Stack.Screen name={ScreenEnums.PAYMENT_SUCCESS} component={PaymentSuccessScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         </SafeAreaProvider>

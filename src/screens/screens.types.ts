@@ -22,6 +22,7 @@ export type RootStackParamList = {
     SUPPORT_CALL: undefined;
     SUPPORT_FAQS: undefined;
     DELETE_ACCOUNT: undefined;
+    PAYMENT_SUCCESS: undefined;
 };
 
 export type RootStackNavigationProp = NativeStackNavigationProp<RootStackParamList>;
