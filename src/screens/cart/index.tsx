@@ -91,7 +91,7 @@ export default function CartScreen() {
 
     if (isEmpty) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <StatusBar barStyle="light-content" />
                 <View style={styles.header}>
                     <TouchableOpacity 
@@ -123,7 +123,7 @@ export default function CartScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <StatusBar barStyle="light-content" />
             
             <View style={styles.header}>
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: 20,
-        paddingBottom: Platform.OS === 'ios' ? 60 : 40, // Moved up a bit
+        paddingBottom: Platform.OS === 'ios' ? 60 : 60, // Moved up a bit
         paddingTop: 16,
         backgroundColor: COLORS.primaryBlack,
     },

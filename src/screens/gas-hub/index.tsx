@@ -29,7 +29,7 @@ export default function GasHubScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <StatusBar barStyle="light-content" />
             
             <View style={styles.header}>
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 60,
         paddingTop: 16,
         backgroundColor: COLORS.primaryBlack,
     },

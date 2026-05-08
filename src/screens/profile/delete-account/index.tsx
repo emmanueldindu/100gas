@@ -12,7 +12,7 @@ export default function DeleteAccountScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <StatusBar barStyle="light-content" />
             
             <View style={styles.header}>
