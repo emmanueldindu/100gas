@@ -15,8 +15,10 @@ import UpdateNameScreen from '../screens/personal-info/update-name';
 import UpdateEmailScreen from '../screens/personal-info/update-email';
 import UpdatePhoneScreen from '../screens/personal-info/update-phone';
 import ProfileOTPScreen from '../screens/personal-info/otp';
+import CustomerTypeScreen from '../screens/personal-info/customer-type';
 import UpdateLocationScreen from '../screens/personal-info/update-location';
 import UpdateCylinderScreen from '../screens/personal-info/update-cylinder';
+import UpdateCylinderSizeScreen from '../screens/personal-info/update-cylinder-size';
 import OffersAndPromosScreen from '../screens/offers';
 import SupportScreen from '../screens/support';
 import SupportChatScreen from '../screens/support/chat';
@@ -24,6 +26,9 @@ import SupportCallScreen from '../screens/support/call';
 import SupportFaqsScreen from '../screens/support/faqs';
 import DeleteAccountScreen from '../screens/profile/delete-account';
 import PaymentSuccessScreen from '../screens/payment-success';
+import NotificationsScreen from '../screens/notifications';
+import GasHubScreen from '../screens/gas-hub';
+import CartScreen from '../screens/cart';
 
 // Stacks
 import AuthStack from './auth-stack';
@@ -103,6 +108,8 @@ export default function Navigation({ initialRoute, onReady }: { initialRoute: In
                     <Stack.Screen name={ScreenEnums.PROFILE_OTP} component={ProfileOTPScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_LOCATION} component={UpdateLocationScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_CYLINDER} component={UpdateCylinderScreen} />
+                    <Stack.Screen name={ScreenEnums.UPDATE_CYLINDER_SIZE} component={UpdateCylinderSizeScreen} />
+                    <Stack.Screen name={ScreenEnums.CUSTOMER_TYPE} component={CustomerTypeScreen} />
                     <Stack.Screen name={ScreenEnums.OFFERS_AND_PROMOS} component={OffersAndPromosScreen} />
                     <Stack.Screen name={ScreenEnums.SUPPORT} component={SupportScreen} />
                     <Stack.Screen name={ScreenEnums.SUPPORT_CHAT} component={SupportChatScreen} />
@@ -110,6 +117,9 @@ export default function Navigation({ initialRoute, onReady }: { initialRoute: In
                     <Stack.Screen name={ScreenEnums.SUPPORT_FAQS} component={SupportFaqsScreen} />
                     <Stack.Screen name={ScreenEnums.DELETE_ACCOUNT} component={DeleteAccountScreen} />
                     <Stack.Screen name={ScreenEnums.PAYMENT_SUCCESS} component={PaymentSuccessScreen} />
+                    <Stack.Screen name={ScreenEnums.NOTIFICATIONS} component={NotificationsScreen} />
+                    <Stack.Screen name={ScreenEnums.GAS_HUB} component={GasHubScreen} />
+                    <Stack.Screen name={ScreenEnums.CART} component={CartScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         </SafeAreaProvider>

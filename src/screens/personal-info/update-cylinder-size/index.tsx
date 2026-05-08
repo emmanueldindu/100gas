@@ -8,7 +8,8 @@ import {
     Platform,
     ScrollView,
     StatusBar,
-    Modal
+    Modal,
+    FlatList
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,20 +19,26 @@ import { COLORS } from '../../../constants/colors';
 import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
 
-export default function UpdateCylinderScreen() {
+const SIZES = [
+    '3kg Cylinder',
+    '5kg Cylinder',
+    '6kg Cylinder',
+    '10kg Cylinder',
+    '12.5kg Cylinder',
+    '25kg Cylinder',
+    '50kg Cylinder'
+];
+
+export default function UpdateCylinderSizeScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    const [count, setCount] = useState(1);
+    const [selectedSize, setSelectedSize] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [tempCount, setTempCount] = useState(1);
 
-    const toggleModal = () => {
-        setTempCount(count);
-        setIsModalVisible(!isModalVisible);
-    };
+    const toggleModal = () => setIsModalVisible(!isModalVisible);
 
-    const handleContinue = () => {
-        setCount(tempCount);
-        setIsModalVisible(false);
+    const handleSelect = (size: string) => {
+        setSelectedSize(size);
+        toggleModal();
     };
 
     return (
@@ -50,7 +57,7 @@ export default function UpdateCylinderScreen() {
                     >
                         <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Number of Cylinders</Text>
+                    <Text style={styles.headerTitle}>Size of Cylinders</Text>
                     <View style={{ width: 44 }} />
                 </View>
 
@@ -59,15 +66,15 @@ export default function UpdateCylinderScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <Text style={styles.labelAbove}>Select the number of cylinders to refill</Text>
+                    <Text style={styles.labelAbove}>Choose the size of your cylinder</Text>
 
                     <TouchableOpacity 
                         style={styles.dropdown} 
                         activeOpacity={0.7}
                         onPress={toggleModal}
                     >
-                        <Text style={styles.dropdownText}>
-                            {count} {count === 1 ? 'Cylinder' : 'Cylinders'}
+                        <Text style={[styles.dropdownText, !selectedSize && { color: '#74757C' }]}>
+                            {selectedSize || 'Select size of cylinder'}
                         </Text>
                         <Ionicons name="chevron-down" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
@@ -84,7 +91,7 @@ export default function UpdateCylinderScreen() {
                 </View>
             </KeyboardAvoidingView>
 
-            {/* Stepper Modal */}
+            {/* Selection Modal */}
             <Modal
                 visible={isModalVisible}
                 transparent={true}
@@ -104,41 +111,34 @@ export default function UpdateCylinderScreen() {
                     <View style={styles.bottomSheet}>
                         <View style={styles.bottomSheetHeader}>
                             <View>
-                                <Text style={styles.bottomSheetTitle}>Select Number of Cylinders</Text>
-                                <Text style={styles.bottomSheetSubtitle}>Bulk Orders may attract discounts</Text>
+                                <Text style={styles.bottomSheetTitle}>Select Cylinder Size</Text>
+                                <Text style={styles.bottomSheetSubtitle}>Choose the size of cylinder you want to refill</Text>
                             </View>
                             <TouchableOpacity onPress={toggleModal} style={styles.closeButton}>
                                 <Ionicons name="close" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.stepperContainer}>
-                            <View style={styles.stepper}>
+                        <FlatList
+                            data={SIZES}
+                            keyExtractor={(item) => item}
+                            showsVerticalScrollIndicator={false}
+                            renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={styles.stepperButton}
-                                    onPress={() => setTempCount(Math.max(1, tempCount - 1))}
+                                    style={styles.optionItem}
+                                    activeOpacity={0.7}
+                                    onPress={() => handleSelect(item)}
                                 >
-                                    <Ionicons name="remove" size={18} color="#000000" />
+                                    <Text style={styles.optionText}>{item}</Text>
+                                    <Ionicons 
+                                        name={selectedSize === item ? "radio-button-on" : "radio-button-off"} 
+                                        size={22} 
+                                        color={selectedSize === item ? COLORS.primary : "#74757C"} 
+                                    />
                                 </TouchableOpacity>
-                                
-                                <Text style={styles.stepperValue}>{tempCount}</Text>
-                                
-                                <TouchableOpacity 
-                                    style={styles.stepperButton}
-                                    onPress={() => setTempCount(tempCount + 1)}
-                                >
-                                    <Ionicons name="add" size={18} color="#000000" />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        <TouchableOpacity 
-                            style={styles.continueButton}
-                            activeOpacity={0.8}
-                            onPress={handleContinue}
-                        >
-                            <Text style={styles.continueText}>Continue</Text>
-                        </TouchableOpacity>
+                            )}
+                            ItemSeparatorComponent={() => <View style={styles.divider} />}
+                        />
                     </View>
                 </View>
             </Modal>
@@ -252,45 +252,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    stepperContainer: {
-        alignItems: 'flex-start',
-        marginBottom: 48,
-    },
-    stepper: {
+    optionItem: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 30,
-        paddingHorizontal: 6,
-        paddingVertical: 6,
-        gap: 20,
+        paddingVertical: 20,
     },
-    stepperButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    stepperValue: {
-        fontSize: 18,
-        fontFamily: FONT.garnet_600_semibold,
-        color: '#FFFFFF',
-        minWidth: 20,
-        textAlign: 'center',
-    },
-    continueButton: {
-        backgroundColor: COLORS.primary,
-        height: 56,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    continueText: {
-        color: '#FFFFFF',
+    optionText: {
         fontSize: 16,
-        fontFamily: FONT.garnet_600_semibold,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
 });

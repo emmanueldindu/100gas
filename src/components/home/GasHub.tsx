@@ -3,13 +3,22 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { FONT } from '../../constants/fonts';
+import { useNavigation } from '@react-navigation/native';
+import ScreenEnums from '../../enums/screen-enums';
+import { RootStackNavigationProp } from '../../screens/screens.types';
 
 const GasHub = () => {
+    const navigation = useNavigation<RootStackNavigationProp>();
+    
     return (
         <View style={styles.gasHubSection}>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Gas Hub</Text>
-                <TouchableOpacity style={styles.viewStoreButton}>
+                <TouchableOpacity 
+                    style={styles.viewStoreButton}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate(ScreenEnums.GAS_HUB)}
+                >
                     <Text style={styles.viewStoreText}>View Store</Text>
                     <Ionicons name="chevron-forward" size={16} color="#D0D5DD" />
                 </TouchableOpacity>

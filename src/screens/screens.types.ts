@@ -18,6 +18,8 @@ export type RootStackParamList = {
     PROFILE_OTP: { phoneNumber: string };
     UPDATE_LOCATION: undefined;
     UPDATE_CYLINDER: undefined;
+    CUSTOMER_TYPE: undefined;
+    UPDATE_CYLINDER_SIZE: undefined;
     OFFERS_AND_PROMOS: undefined;
     SUPPORT: undefined;
     SUPPORT_CHAT: undefined;
@@ -25,6 +27,9 @@ export type RootStackParamList = {
     SUPPORT_FAQS: undefined;
     DELETE_ACCOUNT: undefined;
     PAYMENT_SUCCESS: undefined;
+    NOTIFICATIONS: undefined;
+    GAS_HUB: undefined;
+    CART: undefined;
 };
 
 export type RootStackNavigationProp = NativeStackNavigationProp<RootStackParamList>;

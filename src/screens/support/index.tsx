@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
 
 interface SupportItemProps {
     title: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: any;
     onPress?: () => void;
 }
 
@@ -20,10 +21,10 @@ const SupportItem = ({ title, icon, onPress }: SupportItemProps) => (
         onPress={onPress}
     >
         <View style={styles.supportItemLeft}>
-            <Ionicons name={icon} size={24} color={COLORS.main_dark} />
+            <Image source={icon} style={styles.icon} />
             <Text style={styles.supportItemText}>{title}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.secondaryGray} />
+        <Ionicons name="chevron-forward" size={18} color="#74757C" />
     </TouchableOpacity>
 );
 
@@ -31,98 +32,116 @@ export default function SupportScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
 
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
-            {/* Header with Back Button */}
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.backButton} 
                     onPress={() => navigation.goBack()}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
+                    <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Support</Text>
+                <View style={{ width: 44 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <Text style={styles.title}>Support</Text>
-                <Text style={styles.subtitle}>How can we help you?</Text>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent} 
+                showsVerticalScrollIndicator={false}
+            >
+                <Text style={styles.label}>How can we help you?</Text>
 
                 <View style={styles.supportList}>
                     <SupportItem 
                         title="Chat With Us" 
-                        icon="chatbubble-ellipses-outline" 
+                        icon={require('../../assets/icons/chat.png')} 
                         onPress={() => navigation.navigate(ScreenEnums.SUPPORT_CHAT)}
                     />
+                    <View style={styles.divider} />
                     <SupportItem 
                         title="Call Us" 
-                        icon="call-outline" 
+                        icon={require('../../assets/icons/callus.png')} 
                         onPress={() => navigation.navigate(ScreenEnums.SUPPORT_CALL)}
                     />
+                    <View style={styles.divider} />
                     <SupportItem 
                         title="FAQs" 
-                        icon="help-circle-outline" 
+                        icon={require('../../assets/icons/faqs.png')} 
                         onPress={() => navigation.navigate(ScreenEnums.SUPPORT_FAQS)}
                     />
+                    <View style={styles.divider} />
                 </View>
             </ScrollView>
-        </NativeSafeAreaView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: COLORS.primaryBlack,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingTop: 10,
-        paddingBottom: 10,
+        paddingBottom: 20,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
         borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        borderColor: '#2F3338',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    content: {
-        paddingHorizontal: 24,
-        paddingTop: 20,
+    headerTitle: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 24,
         paddingBottom: 40,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.main_dark,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: COLORS.darkGray,
+    label: {
+        fontSize: 15,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
         marginBottom: 32,
     },
     supportList: {
-        marginTop: 8,
+        gap: 0,
     },
     supportItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
     },
     supportItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
     },
+    icon: {
+        width: 24,
+        height: 24,
+        resizeMode: 'contain',
+    },
     supportItemText: {
         fontSize: 16,
-        fontWeight: '500',
-        color: COLORS.main_dark,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
 });

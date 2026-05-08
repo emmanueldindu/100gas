@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,13 +23,22 @@ export default function DeleteAccountScreen() {
                 >
                     <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Delete your account</Text>
+                <View style={{ width: 44 }} />
             </View>
 
             <View style={styles.content}>
-                <Text style={styles.title}>Delete your account</Text>
                 <Text style={styles.subtitle}>
                     Are you sure you want to delete your account? This action can't be undone. Contact support if you need help.
                 </Text>
+
+                <View style={styles.illustrationContainer}>
+                    <Image 
+                        source={require('../../../assets/icons/delete.png')} 
+                        style={styles.illustration}
+                        resizeMode="contain"
+                    />
+                </View>
 
                 <View style={styles.footer}>
                     <TouchableOpacity 
@@ -59,9 +68,12 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primaryBlack,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingTop: 10,
-        paddingBottom: 10,
+        paddingBottom: 20,
     },
     backButton: {
         width: 44,
@@ -72,33 +84,41 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    headerTitle: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
     content: {
         flex: 1,
         paddingHorizontal: 20,
-        paddingTop: 40,
-    },
-    title: {
-        fontSize: 24,
-        fontFamily: FONT.garnet_600_semibold,
-        color: '#FFFFFF',
-        marginBottom: 8,
+        paddingTop: 24,
     },
     subtitle: {
         fontSize: 15,
         fontFamily: FONT.garnet_400_regular,
-        color: '#74757C',
+        color: '#FFFFFF',
         lineHeight: 22,
         marginBottom: 40,
     },
+    illustrationContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 40,
+    },
+    illustration: {
+        width: '100%',
+        height: 300,
+    },
     footer: {
-        marginTop: 'auto',
         gap: 16,
-        paddingBottom: Platform.OS === 'ios' ? 50 : 60,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     },
     deleteButton: {
         backgroundColor: COLORS.primary,
         height: 56,
-        borderRadius: 12,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -110,11 +130,11 @@ const styles = StyleSheet.create({
     contactSupportButton: {
         backgroundColor: 'transparent',
         height: 56,
-        borderRadius: 12,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#2F3338',
+        borderColor: '#FFFFFF',
     },
     contactSupportButtonText: {
         color: '#FFFFFF',

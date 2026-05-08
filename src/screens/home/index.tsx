@@ -46,7 +46,11 @@ export default function HomeScreen() {
                             </Text>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+                    <TouchableOpacity 
+                        style={styles.notificationButton} 
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate(ScreenEnums.NOTIFICATIONS)}
+                    >
                         <Image resizeMode='contain' source={require('../../assets/icons/notification.png')} style={styles.notificationIcon} />
                     </TouchableOpacity>
                 </View>

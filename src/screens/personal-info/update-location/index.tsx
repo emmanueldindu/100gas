@@ -8,26 +8,38 @@ import {
     KeyboardAvoidingView, 
     Platform,
     ScrollView,
-    StatusBar
+    StatusBar,
+    Modal,
+    FlatList
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { COLORS } from '../../../constants/colors';
 import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
+
+const STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe', 
+    'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 
+    'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 
+    'Taraba', 'Yobe', 'Zamfara'
+];
 
 export default function UpdateLocationScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
     const [selectedState, setSelectedState] = useState('');
     const [address, setAddress] = useState('');
+    const [isStateModalVisible, setIsStateModalVisible] = useState(false);
 
-    /* Commenting out implementation for now to focus on design
-    const queryClient = useQueryClient();
-    const { data: statesResponse, isLoading: isLoadingStates } = useQuery({ ... });
-    const { data: addrResponse, isLoading: isLoadingAddress } = useQuery({ ... });
-    const updateAddressMutation = useMutation({ ... });
-    */
+    const toggleStateModal = () => setIsStateModalVisible(!isStateModalVisible);
+
+    const handleSelectState = (state: string) => {
+        setSelectedState(state);
+        toggleStateModal();
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -60,7 +72,7 @@ export default function UpdateLocationScreen() {
                             <TouchableOpacity 
                                 style={styles.input} 
                                 activeOpacity={0.7}
-                                onPress={() => {}}
+                                onPress={toggleStateModal}
                             >
                                 <Text style={[styles.inputText, !selectedState && { color: '#74757C' }]}>
                                     {selectedState || 'Select state'}
@@ -78,6 +90,7 @@ export default function UpdateLocationScreen() {
                                 value={address}
                                 onChangeText={setAddress}
                                 multiline
+                                
                             />
                         </View>
                     </View>
@@ -93,6 +106,56 @@ export default function UpdateLocationScreen() {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* State Selection Modal */}
+            <Modal
+                visible={isStateModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={toggleStateModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity 
+                        style={styles.backdrop} 
+                        activeOpacity={1} 
+                        onPress={toggleStateModal} 
+                    >
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
+                    </TouchableOpacity>
+                    
+                    <View style={styles.bottomSheet}>
+                        <View style={styles.bottomSheetHeader}>
+                            <Text style={styles.bottomSheetTitle}>Select state</Text>
+                            <TouchableOpacity onPress={toggleStateModal} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <FlatList
+                            data={STATES}
+                            keyExtractor={(item) => item}
+                            showsVerticalScrollIndicator={false}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity 
+                                    style={styles.stateItem}
+                                    activeOpacity={0.7}
+                                    onPress={() => handleSelectState(item)}
+                                >
+                                    <Text style={styles.stateName}>{item}</Text>
+                                    <Ionicons 
+                                        name={selectedState === item ? "radio-button-on" : "radio-button-off"} 
+                                        size={22} 
+                                        color={selectedState === item ? COLORS.primary : "#74757C"} 
+                                    />
+                                </TouchableOpacity>
+                            )}
+                            ItemSeparatorComponent={() => <View style={styles.divider} />}
+                            style={{ maxHeight: 500 }}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -146,6 +209,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
+        color: '#ffffff',
         justifyContent: 'space-between',
     },
     inputText: {
@@ -168,5 +232,52 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontFamily: FONT.garnet_600_semibold,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    bottomSheet: {
+        backgroundColor: '#2F3338',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: 50,
+    },
+    bottomSheetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    bottomSheetTitle: {
+        fontSize: 20,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    closeButton: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    stateItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 16,
+    },
+    stateName: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
 });

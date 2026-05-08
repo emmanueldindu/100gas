@@ -113,17 +113,17 @@ export default function ProfileScreen() {
                     <MenuItem 
                         title="Customer Type" 
                         icon={require('../../assets/icons/profile/customer-type.png')}
-                        onPress={() => {}} // Navigate to customer type
+                        onPress={() => navigation.navigate(ScreenEnums.CUSTOMER_TYPE)}
                     />
                     <MenuItem 
                         title="Number of Gas Cylinder" 
                         icon={require('../../assets/icons/profile/number.png')}
-                        onPress={() => {}} // Navigate to cylinder count
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER)}
                     />
                     <MenuItem 
                         title="Size of Gas Cylinder" 
                         icon={require('../../assets/icons/profile/size.png')}
-                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER)}
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER_SIZE)}
                     />
                 </View>
 
@@ -203,32 +203,52 @@ export default function ProfileScreen() {
 
             {/* Logout Confirmation Modal */}
             <Modal
-                animationType="fade"
-                transparent={true}
                 visible={isLogoutModalVisible}
+                transparent={true}
+                animationType="slide"
                 onRequestClose={toggleLogoutModal}
             >
-                <Pressable style={styles.logoutModalOverlay} onPress={toggleLogoutModal}>
-                    <View style={styles.logoutModalContent}>
-                        <Text style={styles.logoutModalTitle}>Logout</Text>
-                        <Text style={styles.logoutModalSubtitle}>Are you sure you want to log out from your account?</Text>
-                        
-                        <View style={styles.logoutModalButtons}>
-                            <TouchableOpacity 
-                                style={[styles.modalButton, styles.cancelButton]} 
-                                onPress={toggleLogoutModal}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.modalButton, styles.confirmButton]} 
-                                onPress={handleLogout}
-                            >
-                                <Text style={styles.confirmButtonText}>Logout</Text>
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity 
+                        style={styles.backdrop} 
+                        activeOpacity={1} 
+                        onPress={toggleLogoutModal} 
+                    >
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
+                    </TouchableOpacity>
+                    
+                    <View style={styles.bottomSheet}>
+                        <View style={styles.bottomSheetHeader}>
+                            <Text style={styles.bottomSheetTitle}>Logout</Text>
+                            <TouchableOpacity onPress={toggleLogoutModal} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
+
+                        <View style={styles.logoutContent}>
+                            <Text style={styles.logoutSubtitle}>Are you sure you want to log out?</Text>
+                            
+                            <View style={styles.logoutActions}>
+                                <TouchableOpacity 
+                                    style={styles.confirmLogoutButton}
+                                    onPress={handleLogout}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.confirmLogoutText}>Log out</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity 
+                                    style={styles.backButtonSheet}
+                                    onPress={toggleLogoutModal}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.backButtonTextSheet}>Back</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
-                </Pressable>
+                </View>
             </Modal>
         </View>
     );
@@ -390,57 +410,40 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: 'rgba(255,255,255,0.05)',
     },
-    logoutModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 24,
+    logoutContent: {
+        marginTop: 8,
     },
-    logoutModalContent: {
-        width: '100%',
-        backgroundColor: '#1E1E1E',
-        borderRadius: 24,
-        padding: 24,
-        alignItems: 'center',
-    },
-    logoutModalTitle: {
-        fontSize: 20,
-        fontFamily: FONT.garnet_700_bold,
-        color: '#FFFFFF',
-        marginBottom: 12,
-    },
-    logoutModalSubtitle: {
+    logoutSubtitle: {
         fontSize: 16,
         fontFamily: FONT.garnet_400_regular,
-        color: '#74757C',
-        textAlign: 'center',
-        marginBottom: 24,
-        lineHeight: 22,
+        color: '#FFFFFF',
+        marginBottom: 32,
     },
-    logoutModalButtons: {
-        flexDirection: 'row',
-        gap: 12,
+    logoutActions: {
+        gap: 16,
     },
-    modalButton: {
-        flex: 1,
-        height: 52,
-        borderRadius: 12,
+    confirmLogoutButton: {
+        backgroundColor: COLORS.primary,
+        height: 56,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    cancelButton: {
-        backgroundColor: '#2F3338',
-    },
-    cancelButtonText: {
+    confirmLogoutText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontFamily: FONT.garnet_600_semibold,
     },
-    confirmButton: {
-        backgroundColor: COLORS.primary,
+    backButtonSheet: {
+        backgroundColor: 'transparent',
+        height: 56,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2F3338',
     },
-    confirmButtonText: {
+    backButtonTextSheet: {
         color: '#FFFFFF',
         fontSize: 16,
         fontFamily: FONT.garnet_600_semibold,
