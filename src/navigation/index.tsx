@@ -13,6 +13,8 @@ import DeliveryDetailsScreen from '../screens/delivery-details';
 import PersonalInfoScreen from '../screens/personal-info';
 import UpdateNameScreen from '../screens/personal-info/update-name';
 import UpdateEmailScreen from '../screens/personal-info/update-email';
+import UpdatePhoneScreen from '../screens/personal-info/update-phone';
+import ProfileOTPScreen from '../screens/personal-info/otp';
 import UpdateLocationScreen from '../screens/personal-info/update-location';
 import UpdateCylinderScreen from '../screens/personal-info/update-cylinder';
 import OffersAndPromosScreen from '../screens/offers';
@@ -97,6 +99,8 @@ export default function Navigation({ initialRoute, onReady }: { initialRoute: In
                     <Stack.Screen name={ScreenEnums.PERSONAL_INFO} component={PersonalInfoScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_NAME} component={UpdateNameScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_EMAIL} component={UpdateEmailScreen} />
+                    <Stack.Screen name={ScreenEnums.UPDATE_PHONE} component={UpdatePhoneScreen} />
+                    <Stack.Screen name={ScreenEnums.PROFILE_OTP} component={ProfileOTPScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_LOCATION} component={UpdateLocationScreen} />
                     <Stack.Screen name={ScreenEnums.UPDATE_CYLINDER} component={UpdateCylinderScreen} />
                     <Stack.Screen name={ScreenEnums.OFFERS_AND_PROMOS} component={OffersAndPromosScreen} />

@@ -16,23 +16,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
+import ScreenEnums from '../../../enums/screen-enums';
 
-export default function UpdateNameScreen() {
+export default function UpdatePhoneScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
 
-    /* Commenting out implementation for now to focus on design
-    const queryClient = useQueryClient();
-    const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
-        queryKey: ['profile'],
-        queryFn: getProfile,
-    });
-    const updateNameMutation = useMutation({
-        mutationFn: updateProfile,
-        ...
-    });
-    */
+    const handleUpdate = () => {
+        if (phoneNumber.length > 5) {
+            navigation.navigate(ScreenEnums.PROFILE_OTP, { phoneNumber });
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -57,30 +51,18 @@ export default function UpdateNameScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <Text style={styles.title}>Update your name</Text>
+                    <Text style={styles.title}>Update your phone number</Text>
 
                     <View style={styles.form}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>First Name</Text>
+                            <Text style={styles.label}>Enter your Phone Number</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="Enter first name"
+                                placeholder="Enter Phone Number"
                                 placeholderTextColor="#74757C"
-                                value={firstName}
-                                onChangeText={setFirstName}
-                                autoCapitalize="words"
-                            />
-                        </View>
-
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Last Name</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter last name"
-                                placeholderTextColor="#74757C"
-                                value={lastName}
-                                onChangeText={setLastName}
-                                autoCapitalize="words"
+                                value={phoneNumber}
+                                onChangeText={setPhoneNumber}
+                                keyboardType="phone-pad"
                             />
                         </View>
                     </View>
@@ -90,7 +72,7 @@ export default function UpdateNameScreen() {
                     <TouchableOpacity 
                         style={styles.updateButton}
                         activeOpacity={0.8}
-                        onPress={() => navigation.goBack()}
+                        onPress={handleUpdate}
                     >
                         <Text style={styles.updateText}>Update</Text>
                     </TouchableOpacity>

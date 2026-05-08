@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
+import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
 import ScreenEnums from '../../../enums/screen-enums';
 
@@ -11,14 +12,16 @@ export default function DeleteAccountScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
 
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.backButton} 
                     onPress={() => navigation.goBack()}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
+                    <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -28,13 +31,11 @@ export default function DeleteAccountScreen() {
                     Are you sure you want to delete your account? This action can't be undone. Contact support if you need help.
                 </Text>
 
-                <View style={styles.bottomButtons}>
+                <View style={styles.footer}>
                     <TouchableOpacity 
                         style={styles.deleteButton}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            // Handle delete account logic here
-                        }}
+                        onPress={() => {}}
                     >
                         <Text style={styles.deleteButtonText}>Delete</Text>
                     </TouchableOpacity>
@@ -48,11 +49,15 @@ export default function DeleteAccountScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </NativeSafeAreaView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.primaryBlack,
+    },
     header: {
         paddingHorizontal: 20,
         paddingTop: 10,
@@ -63,31 +68,32 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 22,
         borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        borderColor: '#2F3338',
         justifyContent: 'center',
         alignItems: 'center',
     },
     content: {
         flex: 1,
-        paddingHorizontal: 24,
-        paddingTop: 20,
-        paddingBottom: 40,
+        paddingHorizontal: 20,
+        paddingTop: 40,
     },
     title: {
         fontSize: 24,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 15,
-        color: COLORS.darkGray,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
         lineHeight: 22,
         marginBottom: 40,
     },
-    bottomButtons: {
-        marginTop: 'auto', // Pushes buttons to the bottom
+    footer: {
+        marginTop: 'auto',
         gap: 16,
+        paddingBottom: Platform.OS === 'ios' ? 50 : 60,
     },
     deleteButton: {
         backgroundColor: COLORS.primary,
@@ -97,22 +103,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     deleteButtonText: {
-        color: COLORS.primaryWhite,
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: FONT.garnet_600_semibold,
     },
     contactSupportButton: {
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: 'transparent',
         height: 56,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#EFEFEF',
+        borderColor: '#2F3338',
     },
     contactSupportButtonText: {
-        color: COLORS.main_dark,
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: FONT.garnet_600_semibold,
     },
 });

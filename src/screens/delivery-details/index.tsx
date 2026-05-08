@@ -1,16 +1,56 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { RootStackNavigationProp } from '../screens.types';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Image } from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackNavigationProp, RootStackParamList } from '../screens.types';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DeliveryDetailsScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
+    const route = useRoute<RouteProp<RootStackParamList, 'DELIVERY_DETAILS'>>();
+    const { order } = route.params || { order: { type: 'refill' } };
+
+    const isItemOrder = order?.type === 'items';
+
+    const renderDetailItem = (label: string, value: string) => (
+        <View style={styles.detailSection}>
+            <Text style={styles.detailLabel}>{label}</Text>
+            <Text style={styles.detailValue}>{value}</Text>
+        </View>
+    );
+
+    const renderItemRow = (title: string, price: string, qty: number) => (
+        <View style={styles.itemRow}>
+            <View style={styles.itemImageContainer}>
+                <Image 
+                    source={require('../../assets/images/gasimg.png')} 
+                    style={styles.itemImage}
+                />
+            </View>
+            <View style={styles.itemInfo}>
+                <Text style={styles.itemTitle}>{title}</Text>
+                <View style={styles.itemPriceQty}>
+                    <Text style={styles.itemPrice}>{price}</Text>
+                    <Text style={styles.itemQtyDivider}> | </Text>
+                    <Text style={styles.itemQty}>Qty: {qty}</Text>
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderSummaryItem = (label: string, value: string, isTotal?: boolean) => (
+        <View style={[styles.summaryItem, isTotal && styles.totalItem]}>
+            <Text style={[styles.summaryLabel, isTotal && styles.totalLabel]}>{label}</Text>
+            <Text style={[styles.summaryValue, isTotal && styles.totalValueText]}>{value}</Text>
+        </View>
+    );
 
     return (
-        <SafeAreaViewContext style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity 
@@ -18,201 +58,245 @@ export default function DeliveryDetailsScreen() {
                     onPress={() => navigation.goBack()}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Delivery Details</Text>
-                </View>
-                {/* Empty view for spacing to keep the title centered */}
-                <View style={{ width: 44 }} />
+                <Text style={styles.headerTitle}>{isItemOrder ? 'Order Details' : 'Gas Refill Details'}</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Location Section */}
-                <View style={[styles.section, styles.borderBottom]}>
-                    <Text style={styles.sectionTitle}>Delivery to Mercyland Estate</Text>
-                    <Text style={styles.sectionSubtitle}>20 Mar, 10:09 AM</Text>
-                </View>
-
-                {/* Delivery details Section */}
-                <View style={[styles.section, styles.borderBottom]}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Delivery details</Text>
-                    <Text style={styles.sectionText}>3kg cylinder</Text>
-                    <Text style={styles.sectionText}>3kg gas quantity</Text>
-                </View>
-
-                {/* Refill date Section */}
-                <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Refill date</Text>
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>Same day</Text>
-                    </View>
-                </View>
-
-                {/* Payment method Section */}
-                <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Payment method</Text>
-                    <View style={styles.paymentCard}>
-                        <View style={styles.paymentIconContainer}>
-                            <Ionicons name="menu" size={24} color="#00C3F8" style={{ transform: [{ rotate: '90deg' }] }}/>
+                {isItemOrder ? (
+                    <>
+                        <View style={styles.itemsList}>
+                            {renderItemRow('24kg Gas Cylinder', '₦18,000', 1)}
+                            {renderItemRow('24kg Gas Cylinder', '₦18,000', 1)}
+                            {renderItemRow('24kg Gas Cylinder', '₦18,000', 1)}
                         </View>
-                        <View>
-                            <Text style={styles.paymentMethodTitle}>Bank Transfer</Text>
-                            <Text style={styles.paymentMethodSubtitle}>Pay with Paystack</Text>
+
+                        <View style={styles.divider} />
+
+                        {renderDetailItem('Delivery Address', order.description || '9 Trans Amadi Industrial Layout, Port Harcourt')}
+                        {renderDetailItem('Delivery Date and Time', order.date || '09 April, 2026, 10:09 AM')}
+
+                        <View style={styles.summarySection}>
+                            {renderSummaryItem('Sum Total', '₦25,000.00')}
+                            {renderSummaryItem('Delivery Fee', '₦4000')}
+                            {renderSummaryItem('Total to pay', '₦25,000.00', true)}
                         </View>
-                    </View>
-                </View>
 
-                {/* Total Charge Section */}
-                <View style={styles.chargeSection}>
-                    <Text style={styles.chargeLabel}>Your total charge is</Text>
-                    <Text style={styles.chargeAmount}>₦12,300</Text>
-                </View>
+                        <TouchableOpacity style={styles.reorderButton} activeOpacity={0.8}>
+                            <Text style={styles.reorderButtonText}>Add to Cart</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <>
+                        {renderDetailItem('Delivery Address', order.description || '9 Trans Amadi Industrial Layout, Port Harcourt')}
+                        {renderDetailItem('Delivery Date and Time', order.date || '09 April, 2026, 10:09 AM')}
+                        {renderDetailItem('Cylinder Size', '3kg Cylinder')}
+                        {renderDetailItem('Number of Cylinders', '4 Cylinders')}
+                        {renderDetailItem('Delivery Instructions', 'Please call when you arrive. House is the third building after the junction.')}
 
-                {/* Buttons */}
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={[styles.button, styles.primaryButton]} activeOpacity={0.8}>
-                        <Text style={styles.primaryButtonText}>Contact support</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={[styles.button, styles.secondaryButton]} activeOpacity={0.8}>
-                        <Text style={styles.secondaryButtonText}>Contact Driver</Text>
-                    </TouchableOpacity>
-                </View>
+                        <View style={styles.divider} />
+
+                        <View style={styles.amountSection}>
+                            <Text style={styles.amountLabel}>Amount Paid</Text>
+                            <Text style={styles.amountValue}>₦25,000.00</Text>
+                        </View>
+
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity style={styles.reorderButton} activeOpacity={0.8}>
+                                <Text style={styles.reorderButtonText}>Reorder</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={styles.supportButton} activeOpacity={0.8}>
+                                <Text style={styles.supportButtonText}>Contact Support</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
             </ScrollView>
-        </SafeAreaViewContext>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: COLORS.primaryBlack,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 20,
+        paddingVertical: 10,
     },
     backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    headerTitleContainer: {
-        flex: 1,
-        alignItems: 'center',
-    },
     headerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.main_dark,
+        fontSize: 18,
+        fontFamily: FONT.garnet_700_bold,
+        color: '#FFFFFF',
     },
     scrollContent: {
         paddingHorizontal: 20,
+        paddingTop: 30,
         paddingBottom: 40,
     },
-    section: {
-        paddingVertical: 24,
+    itemsList: {
+        marginBottom: 20,
     },
-    borderBottom: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.main_dark,
-        marginBottom: 6,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: COLORS.darkGray,
-    },
-    sectionText: {
-        fontSize: 15,
-        color: COLORS.main_dark,
-        marginBottom: 6,
-    },
-    badge: {
-        backgroundColor: '#FFE8E4',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
-    },
-    badgeText: {
-        color: COLORS.main_dark,
-        fontWeight: '500',
-        fontSize: 15,
-    },
-    paymentCard: {
+    itemRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.light_gray,
-        borderRadius: 8,
-        padding: 16,
+        marginBottom: 24,
     },
-    paymentIconContainer: {
+    itemImageContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: 16,
     },
-    paymentMethodTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+    itemImage: {
+        width: 40,
+        height: 40,
+        resizeMode: 'contain',
+    },
+    itemInfo: {
+        flex: 1,
+    },
+    itemTitle: {
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
         marginBottom: 4,
     },
-    paymentMethodSubtitle: {
+    itemPriceQty: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    itemPrice: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    itemQtyDivider: {
+        fontSize: 16,
+        color: '#74757C',
+    },
+    itemQty: {
         fontSize: 14,
-        color: COLORS.darkGray,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
     },
-    chargeSection: {
-        marginTop: 10,
-        marginBottom: 30,
+    detailSection: {
+        marginBottom: 28,
     },
-    chargeLabel: {
-        fontSize: 15,
-        color: COLORS.darkGray,
+    detailLabel: {
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
         marginBottom: 8,
     },
-    chargeAmount: {
-        fontSize: 36,
-        fontWeight: '800',
-        color: COLORS.main_dark,
+    detailValue: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_500_medium,
+        color: '#FFFFFF',
+        lineHeight: 24,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginVertical: 12,
+        marginBottom: 30,
+    },
+    summarySection: {
+        marginTop: 10,
+        marginBottom: 40,
+    },
+    summaryItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
+    },
+    summaryValue: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    totalItem: {
+        marginTop: 8,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.05)',
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    totalValueText: {
+        fontSize: 20,
+        fontFamily: FONT.garnet_700_bold,
+        color: '#FFFFFF',
+    },
+    amountSection: {
+        marginTop: 20,
+        marginBottom: 40,
+    },
+    amountLabel: {
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
+        marginBottom: 8,
+    },
+    amountValue: {
+        fontSize: 24,
+        fontFamily: FONT.garnet_700_bold,
+        color: '#FFFFFF',
     },
     buttonContainer: {
         gap: 16,
     },
-    button: {
+    reorderButton: {
         height: 56,
         borderRadius: 8,
+        backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        width: '100%',
     },
-    primaryButton: {
-        backgroundColor: COLORS.primary,
-    },
-    primaryButtonText: {
-        color: COLORS.primaryWhite,
+    reorderButtonText: {
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: FONT.garnet_600_semibold,
     },
-    secondaryButton: {
-        backgroundColor: COLORS.primaryWhite,
+    supportButton: {
+        height: 56,
+        borderRadius: 8,
+        backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        borderColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    secondaryButtonText: {
-        color: COLORS.main_dark,
+    supportButtonText: {
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: FONT.garnet_600_semibold,
     },
 });

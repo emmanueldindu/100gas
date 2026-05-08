@@ -1,204 +1,137 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
-import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { FONT } from '../../constants/fonts';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
-import { useQuery } from '@tanstack/react-query';
-import { getProfile } from '../../service/auth';
 
 interface InfoItemProps {
     icon: keyof typeof Ionicons.glyphMap;
     value: string;
-    onEdit?: () => void;
+    onPress?: () => void;
 }
 
-const InfoItem = ({ icon, value, onEdit }: InfoItemProps) => (
-    <View style={styles.infoItem}>
+const InfoItem = ({ icon, value, onPress }: InfoItemProps) => (
+    <TouchableOpacity 
+        style={styles.infoItem} 
+        activeOpacity={0.7} 
+        onPress={onPress}
+    >
         <View style={styles.infoItemLeft}>
-            <Ionicons name={icon} size={22} color={COLORS.darkGray} />
+            <Ionicons name={icon} size={22} color="#74757C" />
             <Text style={styles.infoText}>{value}</Text>
         </View>
-        {onEdit && (
-            <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
-                <Text style={styles.editText}>Edit</Text>
-            </TouchableOpacity>
-        )}
-    </View>
+        <Ionicons name="chevron-forward" size={18} color="#74757C" />
+    </TouchableOpacity>
 );
-
-const SkeletonItem = () => {
-    const opacity = useRef(new Animated.Value(0.3)).current;
-
-    useEffect(() => {
-        const animation = Animated.loop(
-            Animated.sequence([
-                Animated.timing(opacity, {
-                    toValue: 0.7,
-                    duration: 800,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(opacity, {
-                    toValue: 0.3,
-                    duration: 800,
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        animation.start();
-        return () => animation.stop();
-    }, [opacity]);
-
-    return (
-        <View style={styles.infoItem}>
-            <View style={styles.infoItemLeft}>
-                <Animated.View style={[styles.skeletonIcon, { opacity }]} />
-                <Animated.View style={[styles.skeletonText, { opacity }]} />
-            </View>
-            <Animated.View style={[styles.skeletonEdit, { opacity }]} />
-        </View>
-    );
-};
 
 export default function PersonalInfoScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
 
+    /* Commenting out implementation for now to focus on design
     const { data: profileResponse, isLoading, isError } = useQuery({
         queryKey: ['profile'],
         queryFn: getProfile,
-        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+        staleTime: 1000 * 60 * 5,
     });
-
     const user = profileResponse?.data;
-    const firstName = user?.firstName === 'User' ? '' : (user?.firstName || '');
-    const lastName = user?.lastName === 'None' ? '' : (user?.lastName || '');
-    const fullName = `${firstName} ${lastName}`.trim();
+    */
 
     return (
-        <SafeAreaViewContext style={styles.container} edges={['top']}>
-            {/* Header with Back Button */}
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.backButton} 
                     onPress={() => navigation.goBack()}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
+                    <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Personal Info</Text>
+                <View style={{ width: 44 }} /> {/* Spacer for centering */}
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <Text style={styles.title}>Personal Info</Text>
+                <Text style={styles.subtitle}>How can we help you?</Text>
 
-                {isLoading ? (
-                    <View style={styles.infoList}>
-                        <SkeletonItem />
-                        <View style={styles.separator} />
-                        <SkeletonItem />
-                        <View style={styles.separator} />
-                        <SkeletonItem />
-                        <View style={styles.separator} />
-                    </View>
-                ) : isError ? (
-                    <View style={styles.centerContainer}>
-                        <Text style={styles.errorText}>Failed to load profile. Please try again.</Text>
-                    </View>
-                ) : (
-                    <View style={styles.infoList}>
-                        <InfoItem 
-                            icon="person-outline" 
-                            value={fullName || 'Not set'} 
-                            onEdit={() => navigation.navigate(ScreenEnums.UPDATE_NAME)}
-                        />
-                        <View style={styles.separator} />
-                        
-                        <InfoItem 
-                            icon="phone-portrait-outline" 
-                            value={user?.phone || 'Not set'} 
-                        />
-                        <View style={styles.separator} />
+                <View style={styles.infoList}>
+                    <InfoItem 
+                        icon="person-outline" 
+                        value="Miracle Emeka" 
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_NAME)}
+                    />
+                    <View style={styles.separator} />
+                    
+                    <InfoItem 
+                        icon="call-outline" 
+                        value="+2349026190455" 
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_PHONE)}
+                    />
+                    <View style={styles.separator} />
 
-                        <InfoItem 
-                            icon="mail-outline" 
-                            value={user?.email || 'Not set'} 
-                            onEdit={() => navigation.navigate(ScreenEnums.UPDATE_EMAIL)}
-                        />
-                        <View style={styles.separator} />
-                    </View>
-                )}
+                    <InfoItem 
+                        icon="mail-outline" 
+                        value="miracleemeka@gmail.com" 
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_EMAIL)}
+                    />
+                    <View style={styles.separator} />
+                </View>
             </ScrollView>
-        </SafeAreaViewContext>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 40,
-    },
-    errorText: {
-        fontSize: 16,
-        color: 'red',
-        textAlign: 'center',
-    },
-    skeletonIcon: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        backgroundColor: '#F0F0F0',
-    },
-    skeletonText: {
-        width: 150,
-        height: 16,
-        borderRadius: 4,
-        backgroundColor: '#F0F0F0',
-    },
-    skeletonEdit: {
-        width: 40,
-        height: 16,
-        borderRadius: 4,
-        backgroundColor: '#F0F0F0',
+        backgroundColor: COLORS.primaryBlack,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingTop: 10,
-        paddingBottom: 10,
+        paddingBottom: 20,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
         borderWidth: 1,
-        borderColor: COLORS.light_gray,
+        borderColor: '#2F3338',
         justifyContent: 'center',
         alignItems: 'center',
     },
+    headerTitle: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
     content: {
         paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingTop: 30,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.main_dark,
-        marginBottom: 40,
+    subtitle: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+        marginBottom: 48,
     },
     infoList: {
-        gap: 2,
+        marginTop: 10,
     },
     infoItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
+        paddingVertical: 20,
     },
     infoItemLeft: {
         flexDirection: 'row',
@@ -207,17 +140,12 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 16,
-        color: COLORS.main_dark,
-        fontWeight: '400',
-    },
-    editText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
     separator: {
         height: 1,
-        backgroundColor: '#F0F0F0',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         width: '100%',
     },
 });

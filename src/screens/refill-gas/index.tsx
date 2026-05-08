@@ -251,7 +251,8 @@ export default function RefillGasScreen() {
                         activeOpacity={1} 
                         onPress={() => setShowUserTypeModal(false)} 
                     >
-                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
                     </TouchableOpacity>
                     
                     <View style={styles.modalContent}>
@@ -307,7 +308,8 @@ export default function RefillGasScreen() {
                         activeOpacity={1} 
                         onPress={() => setShowCylinderSizeModal(false)} 
                     >
-                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
                     </TouchableOpacity>
                     
                     <View style={styles.modalContent}>
@@ -363,7 +365,8 @@ export default function RefillGasScreen() {
                         activeOpacity={1} 
                         onPress={() => setShowCylinderCountModal(false)} 
                     >
-                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
                     </TouchableOpacity>
                     
                     <View style={styles.modalContent}>

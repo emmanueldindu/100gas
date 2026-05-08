@@ -7,133 +7,128 @@ import {
     KeyboardAvoidingView, 
     Platform,
     ScrollView,
-    TextInput
+    TextInput,
+    StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
+import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
-
-const INPUT_BG = '#F5F4F7';
-const UNDERLINE_COLOR = '#DD5844';
 
 export default function UpdateCylinderScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    
     const [count, setCount] = useState('');
 
-    const isReady = count.length > 0;
-
     return (
-        <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryWhite }}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}
+                style={{ flex: 1 }}
             >
+                <View style={styles.header}>
+                    <TouchableOpacity 
+                        style={styles.backButton} 
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
+
                 <ScrollView 
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <TouchableOpacity 
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
-                    </TouchableOpacity>
+                    <Text style={styles.title}>What number of cylinders do you have?</Text>
 
-                    <View style={styles.content}>
-                        <Text style={styles.title}>What number of cylinders do you have?</Text>
-                        
-                        <View style={styles.form}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Number of gas cylinders</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Enter number of gas cylinder"
-                                    placeholderTextColor={COLORS.secondaryGray}
-                                    keyboardType="numeric"
-                                    value={count}
-                                    onChangeText={setCount}
-                                />
-                                <View style={styles.underline} />
-                            </View>
-
-                            <TouchableOpacity 
-                                style={[styles.updateButton, !isReady && styles.disabledButton]}
-                                activeOpacity={0.8}
-                                disabled={!isReady}
-                                onPress={() => {
-                                    // Handle update logic
-                                    navigation.goBack();
-                                }}
-                            >
-                                <Text style={styles.updateText}>Update</Text>
-                            </TouchableOpacity>
+                    <View style={styles.form}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Number of gas cylinders</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter number of gas cylinder"
+                                placeholderTextColor="#74757C"
+                                value={count}
+                                onChangeText={setCount}
+                                keyboardType="numeric"
+                            />
                         </View>
                     </View>
                 </ScrollView>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity 
+                        style={styles.updateButton}
+                        activeOpacity={0.8}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Text style={styles.updateText}>Update</Text>
+                    </TouchableOpacity>
+                </View>
             </KeyboardAvoidingView>
-        </NativeSafeAreaView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: COLORS.primaryBlack,
     },
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: 24,
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.primaryWhite,
+        borderWidth: 1,
+        borderColor: '#2F3338',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        marginTop: 10,
     },
-    content: {
+    scrollContent: {
+        paddingHorizontal: 20,
         paddingTop: 40,
+        paddingBottom: 20,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+        fontSize: 24,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
         marginBottom: 48,
     },
     form: {
-        width: '100%',
+        gap: 24,
     },
     inputGroup: {
-        marginBottom: 32,
+        gap: 12,
     },
     label: {
-        fontSize: 16,
-        color: COLORS.main_dark,
-        fontWeight: '500',
-        marginBottom: 12,
-        textAlign: 'center',
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
     input: {
-        backgroundColor: INPUT_BG,
-        borderRadius: 12,
         height: 56,
+        borderWidth: 1,
+        borderColor: '#2F3338',
+        borderRadius: 12,
         paddingHorizontal: 16,
         fontSize: 16,
-        color: COLORS.main_dark,
-        textAlign: 'center',
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
-    underline: {
-        height: 1,
-        backgroundColor: UNDERLINE_COLOR,
-        marginTop: -1,
-        marginHorizontal: 4,
+    footer: {
+        paddingHorizontal: 20,
+        paddingBottom: Platform.OS === 'ios' ? 50 : 60,
     },
     updateButton: {
         backgroundColor: COLORS.primary,
@@ -141,14 +136,10 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 250, // Spacing to match mockup
-    },
-    disabledButton: {
-        opacity: 0.6,
     },
     updateText: {
-        color: COLORS.primaryWhite,
-        fontSize: 18,
-        fontWeight: '600',
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
     },
 });

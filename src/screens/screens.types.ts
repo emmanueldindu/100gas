@@ -10,10 +10,12 @@ export type RootStackParamList = {
     OnboardingStack: NavigatorScreenParams<OnboardingStackParamList>;
     REFILL_GAS: undefined;
     DELIVERY_SUMMARY: undefined;
-    DELIVERY_DETAILS: undefined;
+    DELIVERY_DETAILS: { order: any };
     PERSONAL_INFO: undefined;
     UPDATE_NAME: undefined;
     UPDATE_EMAIL: undefined;
+    UPDATE_PHONE: undefined;
+    PROFILE_OTP: { phoneNumber: string };
     UPDATE_LOCATION: undefined;
     UPDATE_CYLINDER: undefined;
     OFFERS_AND_PROMOS: undefined;

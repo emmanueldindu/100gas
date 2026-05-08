@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     View, 
     Text, 
@@ -8,221 +8,140 @@ import {
     Platform,
     ScrollView,
     TextInput,
-    ActivityIndicator
+    StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
+import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProfile, updateProfile } from '../../../service/auth';
-import Toast from 'react-native-toast-message';
-
-const INPUT_BG = '#F5F4F7';
-const UNDERLINE_COLOR = '#DD5844';
 
 export default function UpdateEmailScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    const queryClient = useQueryClient();
     const [email, setEmail] = useState('');
 
+    /* Commenting out implementation for now to focus on design
+    const queryClient = useQueryClient();
     const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
         queryKey: ['profile'],
         queryFn: getProfile,
     });
-
-    useEffect(() => {
-        if (profileResponse?.data?.email) {
-            setEmail(profileResponse.data.email);
-        }
-    }, [profileResponse]);
-
     const updateProfileMutation = useMutation({
         mutationFn: updateProfile,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['profile'] });
-            Toast.show({
-                type: 'success',
-                text1: 'Profile Updated',
-                text2: 'Your email has been updated successfully.'
-            });
-            navigation.goBack();
-        },
-        onError: (error: any) => {
-            Toast.show({
-                type: 'error',
-                text1: 'Update Failed',
-                text2: error?.message || 'Something went wrong. Please try again.'
-            });
-        }
+        ...
     });
-
-    const isEmailValid = (e: string) => /\S+@\S+\.\S+/.test(e);
-    const isReady = isEmailValid(email) && !updateProfileMutation.isPending;
-
-    const handleUpdate = () => {
-        if (!isReady) return;
-
-        const payload: any = {
-            email: email.trim(),
-        };
-
-        // Pass along other required fields only if they have valid content
-        if (profileResponse?.data?.firstName) payload.firstName = profileResponse.data.firstName;
-        if (profileResponse?.data?.lastName) payload.lastName = profileResponse.data.lastName;
-        
-        if (profileResponse?.data?.avatarUrl && profileResponse.data.avatarUrl.startsWith('http')) {
-            payload.avatarUrl = profileResponse.data.avatarUrl;
-        }
-
-        payload.customerType = profileResponse?.data?.customerType || 'HOUSEHOLD';
-
-        console.log('[UpdateEmail] Sending Patch:', JSON.stringify(payload, null, 2));
-        updateProfileMutation.mutate(payload);
-    };
+    */
 
     return (
-        <NativeSafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                style={{ flex: 1 }}
             >
-                <View style={styles.innerContainer}>
+                <View style={styles.header}>
                     <TouchableOpacity 
-                        style={styles.backButton}
+                        style={styles.backButton} 
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <Text style={styles.title}>Update your email address</Text>
+
+                    <View style={styles.form}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email Address</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Provide a valid email address"
+                                placeholderTextColor="#74757C"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+                        </View>
+                    </View>
+                </ScrollView>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity 
+                        style={styles.updateButton}
+                        activeOpacity={0.8}
                         onPress={() => navigation.goBack()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.main_dark} />
+                        <Text style={styles.updateText}>Update</Text>
                     </TouchableOpacity>
-
-                    <ScrollView 
-                        contentContainerStyle={styles.scrollContent}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                    >
-                        {isLoadingProfile ? (
-                            <View style={styles.centerContainer}>
-                                <ActivityIndicator size="large" color={COLORS.primary} />
-                            </View>
-                        ) : (
-                            <View style={styles.content}>
-                                <Text style={styles.title}>Update your email</Text>
-                                
-                                <View style={styles.form}>
-                                    <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>Email Address</Text>
-                                        <TextInput
-                                            style={styles.input}
-                                            placeholder="Provide a valid email address"
-                                            placeholderTextColor={COLORS.secondaryGray}
-                                            keyboardType="email-address"
-                                            autoCapitalize="none"
-                                            value={email}
-                                            onChangeText={setEmail}
-                                        />
-                                        <View style={styles.underline} />
-                                    </View>
-                                </View>
-                            </View>
-                        )}
-                    </ScrollView>
-
-                    {!isLoadingProfile && (
-                        <View style={styles.buttonWrapper}>
-                            <TouchableOpacity 
-                                style={[styles.updateButton, !isReady && styles.disabledButton]}
-                                activeOpacity={0.8}
-                                disabled={!isReady}
-                                onPress={handleUpdate}
-                            >
-                                {updateProfileMutation.isPending ? (
-                                    <ActivityIndicator color={COLORS.primaryWhite} />
-                                ) : (
-                                    <Text style={styles.updateText}>Verify email</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    )}
                 </View>
             </KeyboardAvoidingView>
-        </NativeSafeAreaView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: COLORS.primaryWhite,
-    },
     container: {
         flex: 1,
+        backgroundColor: COLORS.primaryBlack,
     },
-    innerContainer: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingTop: 100,
-    },
-    scrollContent: {
-        flexGrow: 1,
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.primaryWhite,
+        borderWidth: 1,
+        borderColor: '#2F3338',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        marginTop: 10,
     },
-    content: {
+    scrollContent: {
+        paddingHorizontal: 20,
         paddingTop: 40,
+        paddingBottom: 20,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+        fontSize: 24,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
         marginBottom: 48,
     },
     form: {
-        width: '100%',
+        gap: 24,
     },
     inputGroup: {
-        marginBottom: 32,
+        gap: 12,
     },
     label: {
-        fontSize: 16,
-        color: COLORS.main_dark,
-        fontWeight: '500',
-        marginBottom: 12,
-        textAlign: 'center',
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
     input: {
-        backgroundColor: INPUT_BG,
-        borderRadius: 12,
         height: 56,
+        borderWidth: 1,
+        borderColor: '#2F3338',
+        borderRadius: 12,
         paddingHorizontal: 16,
         fontSize: 16,
-        color: COLORS.main_dark,
-        textAlign: 'center',
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
-    underline: {
-        height: 1,
-        backgroundColor: UNDERLINE_COLOR,
-        marginTop: -1,
-        marginHorizontal: 4,
-    },
-    buttonWrapper: {
-        paddingBottom: Platform.OS === 'ios' ? 10 : 20,
-        backgroundColor: COLORS.primaryWhite,
+    footer: {
+        paddingHorizontal: 20,
+        paddingBottom: Platform.OS === 'ios' ? 50 : 60,
     },
     updateButton: {
         backgroundColor: COLORS.primary,
@@ -231,12 +150,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    disabledButton: {
-        opacity: 0.6,
-    },
     updateText: {
-        color: COLORS.primaryWhite,
-        fontSize: 18,
-        fontWeight: '600',
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
     },
 });

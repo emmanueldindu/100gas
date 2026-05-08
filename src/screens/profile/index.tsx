@@ -1,45 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, Modal, Pressable } from 'react-native';
-import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar, Modal, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FONT } from '../../constants/fonts';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
 
-interface ListItemProps {
+interface MenuItemProps {
     title: string;
-    iconName?: keyof typeof Ionicons.glyphMap;
-    customIcon?: React.ReactNode;
+    icon: any;
+    onPress: () => void;
     isDestructive?: boolean;
-    hasSeparator?: boolean;
-    onPress?: () => void;
 }
 
-const ListItem = ({ title, iconName, customIcon, isDestructive, hasSeparator = true, onPress }: ListItemProps) => (
+const MenuItem = ({ title, icon, onPress, isDestructive }: MenuItemProps) => (
     <TouchableOpacity 
-        style={[styles.listItem, hasSeparator && styles.separator]} 
+        style={styles.menuItem} 
         activeOpacity={0.7}
         onPress={onPress}
     >
-        <View style={styles.iconContainer}>
-            {/* User will replace these icons later */}
-            {customIcon ? (
-                customIcon
-            ) : iconName ? (
-                <Ionicons 
-                    name={iconName} 
-                    size={22} 
-                    color={isDestructive ? COLORS.error : COLORS.darkGray} 
-                />
-            ) : (
-                <View style={styles.iconPlaceholder} />
-            )}
+        <View style={styles.menuItemLeft}>
+            <View style={styles.iconContainer}>
+                <Image source={icon} style={[styles.menuIcon, isDestructive && { tintColor: COLORS.error }]} />
+            </View>
+            <Text style={[styles.menuItemText, isDestructive && styles.destructiveText]}>{title}</Text>
         </View>
-        <Text style={[styles.listItemText, isDestructive && styles.destructiveText]}>
-            {title}
-        </Text>
+        <Ionicons name="chevron-forward" size={18} color={isDestructive ? COLORS.error : '#74757C'} />
     </TouchableOpacity>
 );
 
@@ -49,137 +39,169 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 export default function ProfileScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
-    const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+    const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
 
-    const toggleModal = () => setIsUploadModalVisible(!isUploadModalVisible);
     const toggleLogoutModal = () => setIsLogoutModalVisible(!isLogoutModalVisible);
+    const toggleUploadModal = () => setIsUploadModalVisible(!isUploadModalVisible);
+
+    const handleLogout = async () => {
+        toggleLogoutModal();
+        try {
+            await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userToken']);
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'INFO' }],
+            })
+        );
+    };
 
     return (
-        <SafeAreaViewContext style={styles.container} edges={['top']}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                
-                {/* Profile Header section */}
-                <View style={styles.profileHeader}>
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            
+            {/* Header with #1E1E1E background */}
+            <SafeAreaView style={styles.headerBackground} edges={['top']}>
+                <View style={styles.header}>
                     <TouchableOpacity 
-                        style={styles.avatarContainer}
-                        onPress={toggleModal}
+                        style={styles.avatarWrapper} 
                         activeOpacity={0.8}
+                        onPress={toggleUploadModal}
                     >
-                        {/* Placeholder for the avatar image */}
                         <Image 
-                            source={{ uri: 'https://i.pravatar.cc/150?u=miracle' }} 
+                            source={require('../../assets/images/user.png')} 
                             style={styles.avatar} 
                         />
+                        <View style={styles.editBadge}>
+                            <Image 
+                                source={require('../../assets/icons/profile/camera.png')} 
+                                style={styles.cameraIcon}
+                            />
+                        </View>
                     </TouchableOpacity>
-                    <Text style={styles.profileName}>Miracle Emeka</Text>
+                    <View style={styles.userInfo}>
+                        <Text style={styles.userName}>Miracle Emeka</Text>
+                        <Text style={styles.userEmail}>miracleemeka@gmail.com</Text>
+                    </View>
                 </View>
+            </SafeAreaView>
 
-                {/* List Items */}
-                <View style={styles.listContainer}>
-                    
-                    <ListItem 
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                
+                {/* Personal Details Section */}
+                <View style={styles.section}>
+                    <SectionHeader title="Personal Details" />
+                    <MenuItem 
                         title="Personal Info" 
-                        iconName="person-outline" 
+                        icon={require('../../assets/icons/profile/profile.png')}
                         onPress={() => navigation.navigate(ScreenEnums.PERSONAL_INFO)}
                     />
-
-                    <SectionHeader title="Saved places" />
-                    <ListItem 
-                        title="Enter home location" 
-                        iconName="home-outline" 
+                    <MenuItem 
+                        title="Address" 
+                        icon={require('../../assets/icons/profile/address.png')}
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_LOCATION)}
                     />
-{/* 
-                    <SectionHeader title="Gas cylinder details" />
-                    <ListItem 
-                        title="Gas cylinder size" 
-                        customIcon={<MaterialCommunityIcons name="propane-tank-outline" size={22} color={COLORS.darkGray} />}
-                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER)}
-                    /> */}
+                </View>
 
-                    <SectionHeader title="Offers and pomo" />
-                    <ListItem 
+                {/* Gas Cylinder Setup Section */}
+                <View style={styles.section}>
+                    <SectionHeader title="Gas Cylinder Setup" />
+                    <MenuItem 
+                        title="Customer Type" 
+                        icon={require('../../assets/icons/profile/customer-type.png')}
+                        onPress={() => {}} // Navigate to customer type
+                    />
+                    <MenuItem 
+                        title="Number of Gas Cylinder" 
+                        icon={require('../../assets/icons/profile/number.png')}
+                        onPress={() => {}} // Navigate to cylinder count
+                    />
+                    <MenuItem 
+                        title="Size of Gas Cylinder" 
+                        icon={require('../../assets/icons/profile/size.png')}
+                        onPress={() => navigation.navigate(ScreenEnums.UPDATE_CYLINDER)}
+                    />
+                </View>
+
+                {/* Account Section */}
+                <View style={styles.section}>
+                    <SectionHeader title="Account" />
+                    <MenuItem 
                         title="Offers and promo" 
-                        iconName="gift-outline" 
+                        icon={require('../../assets/icons/profile/offers.png')}
                         onPress={() => navigation.navigate(ScreenEnums.OFFERS_AND_PROMOS)}
                     />
-
-                    <View style={styles.spacingMedium} />
-
-                    <ListItem 
+                    <MenuItem 
                         title="Support" 
-                        iconName="headset-outline" 
+                        icon={require('../../assets/icons/profile/support.png')}
                         onPress={() => navigation.navigate(ScreenEnums.SUPPORT)}
                     />
-                    
-                    <ListItem 
+                    <MenuItem 
                         title="Logout" 
-                        iconName="log-out-outline" 
+                        icon={require('../../assets/icons/profile/logout.png')}
                         onPress={toggleLogoutModal}
                     />
-
-                    <ListItem 
+                    <MenuItem 
                         title="Delete Account" 
-                        iconName="trash-outline" 
-                        isDestructive 
-                        hasSeparator={false} 
+                        icon={require('../../assets/icons/profile/delete.png')}
                         onPress={() => navigation.navigate(ScreenEnums.DELETE_ACCOUNT)}
+                        isDestructive
                     />
-
                 </View>
             </ScrollView>
 
             {/* Upload Photo Modal */}
             <Modal
-                animationType="fade"
-                transparent={true}
                 visible={isUploadModalVisible}
-                onRequestClose={toggleModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={toggleUploadModal}
             >
-                <Pressable style={styles.modalOverlay} onPress={toggleModal}>
-                    <Pressable style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Upload Photo</Text>
-                            <TouchableOpacity onPress={toggleModal} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                <Ionicons name="close" size={24} color={COLORS.main_dark} />
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity 
+                        style={styles.backdrop} 
+                        activeOpacity={1} 
+                        onPress={toggleUploadModal} 
+                    >
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
+                    </TouchableOpacity>
+                    
+                    <View style={styles.bottomSheet}>
+                        <View style={styles.bottomSheetHeader}>
+                            <Text style={styles.bottomSheetTitle}>Upload Photo</Text>
+                            <TouchableOpacity onPress={toggleUploadModal} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.modalOptions}>
-                            <TouchableOpacity style={styles.modalOption} activeOpacity={0.7} onPress={toggleModal}>
-                                <Image 
-                                    source={require('../../assets/icons/take-photo.png')} 
-                                    style={styles.optionIcon}
-                                />
-                                <Text style={styles.optionText}>Take Photo</Text>
+                        <View style={styles.uploadOptions}>
+                            <TouchableOpacity style={styles.uploadOption} activeOpacity={0.7} onPress={toggleUploadModal}>
+                                <Ionicons name="camera-outline" size={24} color="#74757C" style={styles.optionIcon} />
+                                <Text style={styles.optionLabel}>Take Photo</Text>
                             </TouchableOpacity>
-
-                            <View style={styles.modalSeparator} />
-
-                            <TouchableOpacity style={styles.modalOption} activeOpacity={0.7} onPress={toggleModal}>
-                                <Image 
-                                    source={require('../../assets/icons/choose-photos.png')} 
-                                    style={styles.optionIcon}
-                                />
-                                <Text style={styles.optionText}>Choose from Photos</Text>
+                            <View style={styles.optionDivider} />
+                            
+                            <TouchableOpacity style={styles.uploadOption} activeOpacity={0.7} onPress={toggleUploadModal}>
+                                <Ionicons name="images-outline" size={24} color="#74757C" style={styles.optionIcon} />
+                                <Text style={styles.optionLabel}>Choose from Photos</Text>
                             </TouchableOpacity>
+                            <View style={styles.optionDivider} />
 
-                            <View style={styles.modalSeparator} />
-
-                            <TouchableOpacity style={styles.modalOption} activeOpacity={0.7} onPress={toggleModal}>
-                                <Image 
-                                    source={require('../../assets/icons/choose-file.png')} 
-                                    style={styles.optionIcon}
-                                />
-                                <Text style={styles.optionText}>Choose from Files</Text>
+                            <TouchableOpacity style={styles.uploadOption} activeOpacity={0.7} onPress={toggleUploadModal}>
+                                <Ionicons name="folder-outline" size={24} color="#74757C" style={styles.optionIcon} />
+                                <Text style={styles.optionLabel}>Choose from Files</Text>
                             </TouchableOpacity>
                         </View>
-                    </Pressable>
-                </Pressable>
+                    </View>
+                </View>
             </Modal>
 
-            {/* Logout Modal */}
+            {/* Logout Confirmation Modal */}
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -187,234 +209,240 @@ export default function ProfileScreen() {
                 onRequestClose={toggleLogoutModal}
             >
                 <Pressable style={styles.logoutModalOverlay} onPress={toggleLogoutModal}>
-                    <Pressable style={styles.logoutModalContent}>
-                        <View style={styles.logoutModalHeader}>
-                            <Text style={styles.logoutModalTitle}>Logout</Text>
-                            <TouchableOpacity onPress={toggleLogoutModal} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                <Ionicons name="close" size={24} color={COLORS.main_dark} />
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.logoutModalContent}>
+                        <Text style={styles.logoutModalTitle}>Logout</Text>
+                        <Text style={styles.logoutModalSubtitle}>Are you sure you want to log out from your account?</Text>
                         
-                        <Text style={styles.logoutSubtitle}>Are you sure you want to log out?</Text>
-
-                        <View style={styles.logoutButtons}>
+                        <View style={styles.logoutModalButtons}>
                             <TouchableOpacity 
-                                style={styles.logoutConfirmButton}
-                                activeOpacity={0.8}
-                                onPress={async () => {
-                                    toggleLogoutModal();
-                                    try {
-                                        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userToken']);
-                                    } catch (e) {
-                                        console.error('Logout error:', e);
-                                    }
-                                    // Reset stack to prevent navigating back to protected screens
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [{ name: 'INFO' }],
-                                        })
-                                    );
-                                }}
-                            >
-                                <Text style={styles.logoutConfirmButtonText}>Log out</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={styles.logoutCancelButton}
-                                activeOpacity={0.8}
+                                style={[styles.modalButton, styles.cancelButton]} 
                                 onPress={toggleLogoutModal}
                             >
-                                <Text style={styles.logoutCancelButtonText}>Back</Text>
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.modalButton, styles.confirmButton]} 
+                                onPress={handleLogout}
+                            >
+                                <Text style={styles.confirmButtonText}>Logout</Text>
                             </TouchableOpacity>
                         </View>
-                    </Pressable>
+                    </View>
                 </Pressable>
             </Modal>
-        </SafeAreaViewContext>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primaryWhite,
+        backgroundColor: COLORS.primaryBlack,
     },
-    scrollContent: {
-        paddingBottom: 40,
+    headerBackground: {
+        backgroundColor: '#1E1E1E',
     },
-    profileHeader: {
-        alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 30,
-    },
-    avatarContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: COLORS.light_gray,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-        marginBottom: 12,
-    },
-    avatar: {
-        width: '100%',
-        height: '100%',
-    },
-    profileName: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.main_dark,
-    },
-    listContainer: {
-        paddingHorizontal: 20,
-    },
-    listItem: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 18,
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 24,
     },
-    separator: {
+    avatarWrapper: {
+        position: 'relative',
+        marginRight: 16,
+    },
+    avatar: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        backgroundColor: '#2F3338',
+    },
+    editBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#DD5844',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#1E1E1E',
+    },
+    cameraIcon: {
+        width: 12,
+        height: 12,
+        resizeMode: 'contain',
+        tintColor: '#FFFFFF',
+    },
+    userInfo: {
+        flex: 1,
+    },
+    userName: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+        marginBottom: 2,
+    },
+    userEmail: {
+        fontSize: 13,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 24,
+        paddingBottom: 100,
+    },
+    section: {
+        marginBottom: 40,
+    },
+    sectionHeader: {
+        fontSize: 18,
+        fontFamily: FONT.garnet_700_bold,
+        color: '#FFFFFF',
+        marginBottom: 16,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        borderBottomColor: 'rgba(255,255,255,0.05)',
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     iconContainer: {
-        width: 28,
+        width: 24,
+        height: 24,
         justifyContent: 'center',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginRight: 12,
     },
-    iconPlaceholder: {
-        width: 22,
-        height: 22,
-        backgroundColor: '#F0F0F0',
-        borderRadius: 4,
+    menuIcon: {
+        width: 20,
+        height: 20,
+        resizeMode: 'contain',
     },
-    listItemText: {
-        fontSize: 16,
-        color: COLORS.main_dark,
-        fontWeight: '400',
+    menuItemText: {
+        fontSize: 15,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
     destructiveText: {
         color: COLORS.error,
     },
-    sectionHeader: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.main_dark,
-        marginTop: 24,
-        marginBottom: 4,
-    },
-    spacingMedium: {
-        height: 12,
-    },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 20,
+        justifyContent: 'flex-end',
     },
-    modalContent: {
-        backgroundColor: COLORS.primaryWhite,
-        borderRadius: 16,
-        padding: 24,
-        width: '100%',
-        maxWidth: 400,
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
     },
-    modalHeader: {
+    bottomSheet: {
+        backgroundColor: '#2F3338',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: 50,
+    },
+    bottomSheetHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 32,
     },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+    bottomSheetTitle: {
+        fontSize: 22,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
     },
-    modalOptions: {
-        gap: 4,
+    closeButton: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    modalOption: {
+    uploadOptions: {
+        gap: 0,
+    },
+    uploadOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
+        paddingVertical: 20,
     },
     optionIcon: {
-        width: 24,
-        height: 24,
         marginRight: 16,
-        resizeMode: 'contain',
     },
-    optionText: {
+    optionLabel: {
         fontSize: 16,
-        color: COLORS.main_dark,
-        fontWeight: '400',
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
     },
-    modalSeparator: {
+    optionDivider: {
         height: 1,
-        backgroundColor: '#F0F0F0',
-        width: '100%',
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
     logoutModalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 24,
     },
     logoutModalContent: {
-        backgroundColor: COLORS.primaryWhite,
-        borderRadius: 16,
-        padding: 24,
         width: '100%',
-        maxWidth: 400,
-    },
-    logoutModalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        backgroundColor: '#1E1E1E',
+        borderRadius: 24,
+        padding: 24,
         alignItems: 'center',
-        marginBottom: 16,
     },
     logoutModalTitle: {
         fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.main_dark,
+        fontFamily: FONT.garnet_700_bold,
+        color: '#FFFFFF',
+        marginBottom: 12,
     },
-    logoutSubtitle: {
-        fontSize: 15,
-        color: COLORS.darkGray,
-        marginBottom: 32,
+    logoutModalSubtitle: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#74757C',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
     },
-    logoutButtons: {
+    logoutModalButtons: {
+        flexDirection: 'row',
         gap: 12,
     },
-    logoutConfirmButton: {
+    modalButton: {
+        flex: 1,
+        height: 52,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#2F3338',
+    },
+    cancelButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: FONT.garnet_600_semibold,
+    },
+    confirmButton: {
         backgroundColor: COLORS.primary,
-        height: 50,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
-    logoutConfirmButtonText: {
-        color: COLORS.primaryWhite,
+    confirmButtonText: {
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
-    },
-    logoutCancelButton: {
-        backgroundColor: COLORS.primaryWhite,
-        height: 50,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#EFEFEF',
-    },
-    logoutCancelButtonText: {
-        color: COLORS.main_dark,
-        fontSize: 16,
-        fontWeight: '600',
+        fontFamily: FONT.garnet_600_semibold,
     },
 });
