@@ -44,7 +44,7 @@ export default function ProfileOTPScreen() {
 
     const renderOtpBoxes = () => {
         const boxes = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 4; i++) {
             const char = otp[i] || '';
             const isFocused = otp.length === i;
             boxes.push(
@@ -82,7 +82,7 @@ export default function ProfileOTPScreen() {
 
                     <View style={styles.content}>
                         <Text style={styles.description}>
-                            Enter the 6 digit PIN sent to the number
+                            Enter the 4 digit PIN sent to the number
                         </Text>
 
                         <View style={styles.phoneBox}>
@@ -90,7 +90,7 @@ export default function ProfileOTPScreen() {
                         </View>
 
                         <Text style={styles.timerText}>
-                            Expires in: <Text style={styles.timerSeconds}>{timeLeft} secs</Text>
+                    Request OTP in: <Text style={styles.timerSeconds}>{timeLeft} secs</Text>
                         </Text>
 
                         <Pressable 
@@ -105,9 +105,9 @@ export default function ProfileOTPScreen() {
                             style={styles.hiddenInput}
                             value={otp}
                             onChangeText={(val) => {
-                                if (val.length <= 6) {
+                                if (val.length <= 4) {
                                     setOtp(val);
-                                    if (val.length === 6) {
+                                    if (val.length === 4) {
                                         // Focus on design: navigation back for now
                                         setTimeout(() => {
                                             navigation.navigate(ScreenEnums.PERSONAL_INFO);
@@ -116,7 +116,7 @@ export default function ProfileOTPScreen() {
                                 }
                             }}
                             keyboardType="number-pad"
-                            maxLength={6}
+                            maxLength={4}
                             autoFocus
                         />
 
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     otpBox: {
-        width: 44,
-        height: 48,
+        width: 64,
+        height: 64,
         borderRadius: 4,
         borderWidth: 1,
         borderColor: '#2F3338',

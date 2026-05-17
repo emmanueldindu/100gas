@@ -7,6 +7,7 @@ import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
+import { toastConfig } from './src/components/custom-toast';
 import { COLORS } from './src/constants/colors';
 import { FONT } from './src/constants/fonts';
 import Navigation from './src/navigation';
@@ -31,7 +32,7 @@ export default function App() {
         console.log('🔤 [App] Starting resource loading...');
 
         // Preload essential images, fonts and tokens simultaneously
-        const [_, token] = await Promise.all([
+        const [,, token] = await Promise.all([
           Asset.fromModule(require('./src/assets/icons/illustration.png')).downloadAsync(),
           Font.loadAsync({
             [FONT.garnet_400_regular]: require('./src/assets/font/Garnett-Regular.ttf'),
@@ -77,7 +78,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#121212' }}>
         <Navigation initialRoute={initialRoute} onReady={onNavigationReady} />
-        <Toast />
+        <Toast config={toastConfig} />
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

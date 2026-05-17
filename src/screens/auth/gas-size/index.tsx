@@ -18,6 +18,9 @@ import { FONT } from '../../../constants/fonts';
 import { AuthStackNavigationProp, AuthStackParamList } from '../../../navigation/auth-stack/auth-stack.types';
 import ScreenEnums from '../../../enums/screen-enums';
 import NavigationHeader from '@/src/components/navigation-header';
+import { registerUser } from '../../../service/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const GAS_SIZES = [
     { label: '3kg cylinder', value: 'KG_3' },
@@ -37,14 +40,52 @@ export default function GasSizeScreen() {
     const [selectedSize, setSelectedSize] = useState<{label: string, value: string} | null>(null);
     const [selectedCount, setSelectedCount] = useState<string | null>(null);
     const [showSizeDropdown, setShowSizeDropdown] = useState(false);
-    const [showCountDropdown, setShowCountDropdown] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const isReady = selectedSize && selectedCount;
 
-    const handleContinue = () => {
-        // In a real app, you'd save this data to the server here.
-        // For now, we'll just navigate to the main app as requested.
-        navigation.navigate(ScreenEnums.BOTTOM_TABS as any);
+    const handleContinue = async () => {
+        setIsLoading(true);
+        try {
+            const payload = {
+                ...route.params?.payload,
+                cylinderSize: selectedSize?.value,
+                cylinderCount: parseInt(selectedCount || '1'),
+            };
+
+            const data = await registerUser(payload);
+
+            if (data?.success) {
+                // Store tokens and user info
+                await AsyncStorage.multiSet([
+                    ['accessToken', data?.data?.tokens?.accessToken || ''],
+                    ['refreshToken', data?.data?.tokens?.refreshToken || ''],
+                    ['userToken', JSON.stringify(data?.data?.user || {})]
+                ]);
+
+                Toast.show({
+                    type: 'success',
+                    text1: 'Registration Successful',
+                    text2: 'Welcome to 100 Gas!'
+                });
+
+                // Navigate to main app
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: ScreenEnums.BOTTOM_TABS as any }],
+                });
+            } else {
+                throw new Error(data?.message || 'Registration failed');
+            }
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Registration Failed',
+                text2: error?.message || 'Something went wrong. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -154,12 +195,16 @@ export default function GasSizeScreen() {
 
                     <View style={styles.footer}>
                         <TouchableOpacity 
-                            style={[styles.continueButton, !isReady && styles.disabledButton]}
+                            style={[styles.continueButton, (!isReady || isLoading) && styles.disabledButton]}
                             activeOpacity={0.8}
-                            disabled={!isReady}
+                            disabled={!isReady || isLoading}
                             onPress={handleContinue}
                         >
-                            <Text style={styles.continueText}>Continue</Text>
+                            {isLoading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.continueText}>Complete Registration</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

@@ -31,27 +31,33 @@ export default function PhoneNumberScreen() {
 
     const isReady = phoneNumber.length >= 7; // Allowing 7-10 digits for flexibility
 
-    // const handleRequestOtp = async () => {
-    //     const payloadPhone = `+234${phoneNumber}`;
-    //     setIsLoading(true);
-    //     try {
-    //         await requestOtp(payloadPhone);
-    //         Toast.show({
-    //             type: 'success',
-    //             text1: 'OTP Sent',
-    //             text2: 'An OTP has been sent to your phone number.'
-    //         });
-    //         navigation.navigate(ScreenEnums.OTP, { phoneNumber: payloadPhone });
-    //     } catch (error: any) {
-    //         Toast.show({
-    //             type: 'error',
-    //             text1: 'Error',
-    //             text2: error?.message || 'Failed to request OTP. Please try again.'
-    //         });
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
+    const handleRequestOtp = async () => {
+        // Remove leading zero if present and ensure it starts with +234
+        let formattedPhone = phoneNumber.trim();
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = formattedPhone.substring(1);
+        }
+        const payloadPhone = formattedPhone.startsWith('+') ? formattedPhone : `+234${formattedPhone}`;
+        
+        setIsLoading(true);
+        try {
+            await requestOtp(payloadPhone);
+            Toast.show({
+                type: 'success',
+                text1: 'OTP Sent',
+                text2: 'An OTP has been sent to your phone number.'
+            });
+            navigation.navigate(ScreenEnums.OTP, { phoneNumber: payloadPhone });
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error?.message || 'Failed to request OTP. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <NativeSafeAreaView style={{ flex: 1, backgroundColor: COLORS.primaryBlack }}>
@@ -95,7 +101,7 @@ export default function PhoneNumberScreen() {
                                 styles.signUpButton,
                                 (!isReady || isLoading) && styles.buttonDisabled
                             ]}
-                            onPress={() => navigation.navigate(ScreenEnums.OTP, { phoneNumber })} 
+                            onPress={handleRequestOtp} 
                             activeOpacity={0.8}
                             disabled={!isReady || isLoading}
                         >

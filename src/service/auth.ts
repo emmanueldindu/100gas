@@ -68,3 +68,17 @@ export const updateProfile = async (payload: any) => {
     throw error;
   }
 };
+
+export const deleteAccount = async () => {
+  try {
+    const response = await api.delete('/v1/auth/me');
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      console.error('Delete Account Error:', error.response.data);
+      throw error.response.data;
+    }
+    console.error('Delete Account Error:', error.message);
+    throw error;
+  }
+};

@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 14,
-        color: COLORS.primaryWhite,
+        color: '#FFFFFF',
         fontFamily: FONT.garnet_400_regular,
         lineHeight: 20,
         marginBottom: 32,
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     label: {
-        fontSize: 14,
-        color: COLORS.primaryWhite,
+        fontSize: 13,
+        color: COLORS.light_gray,
         fontFamily: FONT.garnet_400_regular,
         marginBottom: 8,
     },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontSize: 16,
         color: COLORS.primaryWhite,
-        fontFamily: FONT.garnet_400_regular,
+        fontFamily: FONT.garnet_500_medium,
     },
     gpsLink: {
         flexDirection: 'row',

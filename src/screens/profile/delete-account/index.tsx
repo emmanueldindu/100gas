@@ -7,9 +7,48 @@ import { COLORS } from '../../../constants/colors';
 import { FONT } from '../../../constants/fonts';
 import { RootStackNavigationProp } from '../../screens.types';
 import ScreenEnums from '../../../enums/screen-enums';
+import { deleteAccount } from '../../../service/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import { ActivityIndicator } from 'react-native';
 
 export default function DeleteAccountScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
+    const [isLoading, setIsLoading] = React.useState(false);
+
+    const handleDeleteAccount = async () => {
+        setIsLoading(true);
+        try {
+            await deleteAccount();
+            
+            // Clear all auth data
+            await AsyncStorage.multiRemove([
+                'accessToken',
+                'refreshToken',
+                'userToken'
+            ]);
+
+            Toast.show({
+                type: 'success',
+                text1: 'Account Deleted',
+                text2: 'Your account has been successfully removed.'
+            });
+
+            // Reset navigation to onboarding/auth
+            navigation.reset({
+                index: 0,
+                routes: [{ name: ScreenEnums.INFO as any }],
+            });
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Deletion Failed',
+                text2: error?.message || 'Could not delete account. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -42,11 +81,16 @@ export default function DeleteAccountScreen() {
 
                 <View style={styles.footer}>
                     <TouchableOpacity 
-                        style={styles.deleteButton}
+                        style={[styles.deleteButton, isLoading && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {}}
+                        onPress={handleDeleteAccount}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.deleteButtonText}>Delete</Text>
+                        {isLoading ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.deleteButtonText}>Delete</Text>
+                        )}
                     </TouchableOpacity>
 
                     <TouchableOpacity 

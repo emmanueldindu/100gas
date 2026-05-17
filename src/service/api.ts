@@ -31,9 +31,14 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
+      const isAuthRoute = config.url?.includes('/v1/auth/request-otp') || 
+                          config.url?.includes('/v1/auth/verify-otp') || 
+                          config.url?.includes('/v1/auth/register') ||
+                          config.url?.includes('/v1/auth/login');
+
       if (token) {
         config.headers.set('Authorization', `Bearer ${token}`);
-      } else {
+      } else if (!isAuthRoute) {
         console.warn(`[API Interceptor] No accessToken found for ${config.url}`);
       }
     } catch (error) {

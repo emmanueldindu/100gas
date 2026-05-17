@@ -21,7 +21,7 @@ import { COLORS } from '../../../constants/colors';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { FONT } from '../../../constants/fonts';
-import { verifyOtp } from '../../../service/auth';
+import { verifyOtp, requestOtp } from '../../../service/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavigationHeader from '@/src/components/navigation-header';
 
@@ -46,17 +46,33 @@ export default function OTPScreen() {
     }, [timeLeft]);
 
     const handleVerifyOtp = async (code: string) => {
-        if (code.length !== 6) return;
+        if (code.length !== 4) return;
         setIsLoading(true);
         try {
             const response = await verifyOtp(phoneNumber, code);
             const data = response?.data || response;
             
             if (data?.isNewUser === true) {
-                navigation.navigate(ScreenEnums.WELCOME, { registrationToken: data?.registrationToken || '' });
+                // New user - navigate to Welcome screen with registration token
+                navigation.navigate(ScreenEnums.WELCOME, { 
+                    registrationToken: data?.registrationToken || '' 
+                });
             } else {
-                const accessToken = data?.tokens?.accessToken;
-                if (accessToken) await AsyncStorage.setItem('accessToken', accessToken);
+                // Existing user - save tokens and navigate to home
+                const tokens = data?.tokens;
+                if (tokens?.accessToken) {
+                    await AsyncStorage.setItem('accessToken', tokens.accessToken);
+                }
+                if (tokens?.refreshToken) {
+                    await AsyncStorage.setItem('refreshToken', tokens.refreshToken);
+                }
+                
+                Toast.show({
+                    type: 'success',
+                    text1: 'Login Successful',
+                    text2: `Welcome back, ${data?.user?.firstName || 'User'}!`
+                });
+                
                 navigation.navigate(ScreenEnums.BOTTOM_TABS as any);
             }
         } catch (error: any) {
@@ -71,9 +87,31 @@ export default function OTPScreen() {
         }
     };
 
+    const handleResendOtp = async () => {
+        setIsLoading(true);
+        try {
+            await requestOtp(phoneNumber);
+            setTimeLeft(60);
+            setOtp('');
+            Toast.show({
+                type: 'success',
+                text1: 'OTP Sent',
+                text2: 'A new OTP has been sent to your phone number.'
+            });
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error?.message || 'Failed to resend OTP. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const renderOtpBoxes = () => {
         const boxes = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 4; i++) {
             const char = otp[i] || '';
             const isFocused = otp.length === i;
             boxes.push(
@@ -110,7 +148,7 @@ export default function OTPScreen() {
 
                     <View style={styles.content}>
                         <Text style={styles.description}>
-                            Enter the 6 digit PIN sent to the number
+                            Enter the 4 digit PIN sent to the number
                         </Text>
 
                         <View style={styles.phoneBox}>
@@ -118,7 +156,7 @@ export default function OTPScreen() {
                         </View>
 
                         <Text style={styles.timerText}>
-                            Expires in: <Text style={styles.timerSeconds}>{timeLeft} secs</Text>
+                            Resend OTP in: <Text style={styles.timerSeconds}>{timeLeft} secs</Text>
                         </Text>
 
                         <Pressable 
@@ -133,23 +171,23 @@ export default function OTPScreen() {
                             style={styles.hiddenInput}
                             value={otp}
                             onChangeText={(val) => {
-                                if (val.length <= 6) {
+                                if (val.length <= 4) {
                                     setOtp(val);
-                                    if (val.length === 6) {
-                                                      navigation.navigate(ScreenEnums.LOCATION as any);
+                                    if (val.length === 4) {
+                                        handleVerifyOtp(val);
                                     }
                                 }
                             }}
                             keyboardType="number-pad"
-                            maxLength={6}
+                            maxLength={4}
                             autoFocus
                             editable={!isLoading}
                         />
 
                         <TouchableOpacity 
                             style={styles.resendContainer}
-                            onPress={() => setTimeLeft(60)}
-                            disabled={timeLeft > 0}
+                            onPress={handleResendOtp}
+                            disabled={timeLeft > 0 || isLoading}
                         >
                             <Text style={styles.resendText}>
                                 Didn't receive the code? Resend OTP
@@ -218,8 +256,8 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     otpBox: {
-        width: 44,
-        height: 48,
+        width: 64,
+        height: 64,
         borderRadius: 4,
         borderWidth: 1,
         borderColor: '#2F3338',
