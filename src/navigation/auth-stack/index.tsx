@@ -6,6 +6,7 @@ import PhoneNumberScreen from '../../screens/auth/phone-number';
 import OTPScreen from '../../screens/auth/otp';
 import WelcomeScreen from '../../screens/auth/welcome';
 import LocationScreen from '../../screens/auth/location';
+import CustomerTypeAuthScreen from '../../screens/auth/customer-type';
 import GasSizeScreen from '../../screens/auth/gas-size';
 import CylinderCountScreen from '../../screens/auth/cylinder-count';
 
@@ -24,6 +25,7 @@ export default function AuthStack() {
             <Stack.Screen name={ScreenEnums.OTP} component={OTPScreen} />
             <Stack.Screen name={ScreenEnums.WELCOME} component={WelcomeScreen} />
             <Stack.Screen name={ScreenEnums.LOCATION} component={LocationScreen} />
+            <Stack.Screen name={ScreenEnums.CUSTOMER_TYPE_AUTH} component={CustomerTypeAuthScreen} />
             <Stack.Screen name={ScreenEnums.GAS_SIZE} component={GasSizeScreen} />
             <Stack.Screen name={ScreenEnums.CYLINDER_COUNT} component={CylinderCountScreen} />
         </Stack.Navigator>

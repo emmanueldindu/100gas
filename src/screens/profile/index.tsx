@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
+import { useQuery } from '@tanstack/react-query';
+import { getProfile } from '../../service';
 
 interface MenuItemProps {
     title: string;
@@ -42,6 +44,36 @@ export default function ProfileScreen() {
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
 
+    const { data: profileResponse } = useQuery({
+        queryKey: ['profile'],
+        queryFn: getProfile,
+        staleTime: 1000 * 60 * 10, // 10 minutes cache
+    });
+
+    const [localUser, setLocalUser] = useState<any>(null);
+    const [isCacheLoaded, setIsCacheLoaded] = useState(false);
+
+    useEffect(() => {
+        const loadCachedUser = async () => {
+            try {
+                const cached = await AsyncStorage.getItem('cachedProfile');
+                if (cached) {
+                    setLocalUser(JSON.parse(cached));
+                }
+            } catch (e) {
+                // ignore
+            } finally {
+                setIsCacheLoaded(true);
+            }
+        };
+        loadCachedUser();
+    }, []);
+
+    const user = profileResponse?.data || localUser;
+    const fullName = user ? `${user.firstName} ${user.lastName || ''}`.trim() : (isCacheLoaded ? 'User' : '...');
+    const email = user?.email || '';
+    const avatarUrl = user?.avatarUrl;
+
     const toggleLogoutModal = () => setIsLogoutModalVisible(!isLogoutModalVisible);
     const toggleUploadModal = () => setIsUploadModalVisible(!isUploadModalVisible);
 
@@ -73,7 +105,7 @@ export default function ProfileScreen() {
                         onPress={toggleUploadModal}
                     >
                         <Image 
-                            source={require('../../assets/images/user.png')} 
+                            source={avatarUrl ? { uri: avatarUrl } : require('../../assets/images/user.png')} 
                             style={styles.avatar} 
                         />
                         <View style={styles.editBadge}>
@@ -84,8 +116,8 @@ export default function ProfileScreen() {
                         </View>
                     </TouchableOpacity>
                     <View style={styles.userInfo}>
-                        <Text style={styles.userName}>Miracle Emeka</Text>
-                        <Text style={styles.userEmail}>miracleemeka@gmail.com</Text>
+                        <Text style={styles.userName}>{fullName}</Text>
+                        <Text style={styles.userEmail}>{email}</Text>
                     </View>
                 </View>
             </SafeAreaView>
@@ -283,20 +315,20 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#DD5844',
+        width: 30,
+        height: 30,
+        borderRadius: '50%',
+        // backgroundColor: '#DD5844',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#1E1E1E',
+        // borderWidth: 2,
+        // borderColor: '#1E1E1E',
     },
     cameraIcon: {
-        width: 12,
-        height: 12,
+        width: '100%',
+        height: '100%',
         resizeMode: 'contain',
-        tintColor: '#FFFFFF',
+        // tintColor: '#FFFFFF',
     },
     userInfo: {
         flex: 1,

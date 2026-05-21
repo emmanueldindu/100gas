@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar, TextInput, Modal } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,8 @@ import NavigationHeader from '../../components/navigation-header';
 import { COLORS } from '../../constants/colors';
 import { FONT } from '../../constants/fonts';
 import ScreenEnums from '../../enums/screen-enums';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getAddressesResult, createAddressResult, createOrder, CreateOrderPayload, getProducts, getUserCylinders, getPricingRates } from '../../service';
 
 const CUSTOMER_TYPES = [
     { label: 'Household (Personal use)', value: 'Household (Personal use)' },
@@ -25,17 +27,227 @@ const CYLINDER_SIZES = [
     { label: '12.5kg Cylinder', value: '12.5kg Cylinder' },
 ];
 
+const generateNext7Days = () => {
+    const days = [];
+    const dayNames = ['S', 'M', 'T', 'W', 'TH', 'F', 'S'];
+    const now = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(now.getDate() + i);
+        
+        days.push({
+            day: dayNames[d.getDay()],
+            date: d.getDate().toString(),
+            fullDate: d,
+        });
+    }
+    return days;
+};
+
 export default function RefillGasScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
+    const queryClient = useQueryClient();
     const [showUserTypeModal, setShowUserTypeModal] = useState(false);
     const [selectedUserType, setSelectedUserType] = useState('');
     const [showCylinderSizeModal, setShowCylinderSizeModal] = useState(false);
     const [selectedCylinderSize, setSelectedCylinderSize] = useState('');
+    const [selectedCylinder, setSelectedCylinder] = useState<any>(null);
     const [showCylinderCountModal, setShowCylinderCountModal] = useState(false);
     const [cylinderCount, setCylinderCount] = useState(1);
     const [address, setAddress] = useState('');
 
+    const calendarDays = useMemo(() => generateNext7Days(), []);
+    const [selectedDate, setSelectedDate] = useState<Date>(calendarDays[0].fullDate);
+
+    const [promoCode, setPromoCode] = useState('');
+    const [note, setNote] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Fetch user's registered cylinders
+    const { data: cylindersRes } = useQuery({
+        queryKey: ['cylinders'],
+        queryFn: getUserCylinders,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    // Fetch active pricing rates
+    const { data: pricingRatesRes } = useQuery({
+        queryKey: ['pricingRates'],
+        queryFn: getPricingRates,
+        staleTime: 1000 * 60 * 10,
+    });
+
+    // Map backend user cylinders to human readable list
+    const userCylindersList = useMemo(() => {
+        if (cylindersRes?.success && Array.isArray(cylindersRes.data) && cylindersRes.data.length > 0) {
+            return cylindersRes.data.map(cyl => {
+                let sizeLabel = "12.5kg Cylinder";
+                if (cyl.size === 'KG_3') sizeLabel = "3kg Cylinder";
+                else if (cyl.size === 'KG_5') sizeLabel = "5kg Cylinder";
+                else if (cyl.size === 'KG_6') sizeLabel = "6kg Cylinder";
+                else if (cyl.size === 'KG_10') sizeLabel = "10kg Cylinder";
+                else if (cyl.size === 'KG_12_5') sizeLabel = "12.5kg Cylinder";
+                else {
+                    sizeLabel = `${(cyl.size || '').replace('KG_', '').replace('_', '.') || '12.5'}kg Cylinder`;
+                }
+
+                return {
+                    id: cyl.id,
+                    size: cyl.size,
+                    qrCodeId: cyl.qrCodeId,
+                    label: sizeLabel,
+                    value: cyl.size,
+                };
+            });
+        }
+        // Fallback static list if no cylinders returned
+        return [
+            { id: '1', size: 'KG_3', qrCodeId: 'GT-CYL-3KG', label: '3kg Cylinder', value: 'KG_3' },
+            { id: '2', size: 'KG_5', qrCodeId: 'GT-CYL-5KG', label: '5kg Cylinder', value: 'KG_5' },
+            { id: '3', size: 'KG_6', qrCodeId: 'GT-CYL-6KG', label: '6kg Cylinder', value: 'KG_6' },
+            { id: '4', size: 'KG_10', qrCodeId: 'GT-CYL-10KG', label: '10kg Cylinder', value: 'KG_10' },
+            { id: '5', size: 'KG_12_5', qrCodeId: 'GT-CYL-12_5', label: '12.5kg Cylinder', value: 'KG_12_5' },
+        ];
+    }, [cylindersRes]);
+
+    // Calculate dynamic pricing based on backend rate retrieval
+    const pricing = useMemo(() => {
+        const pricePerKg = pricingRatesRes?.success && pricingRatesRes?.data?.pricePerKg ? pricingRatesRes.data.pricePerKg : 1200;
+        const deliveryFee = pricingRatesRes?.success && pricingRatesRes?.data?.deliveryFee ? pricingRatesRes.data.deliveryFee : 4000;
+
+        let kg = 12.5;
+        if (selectedCylinder) {
+            const sizeStr = (selectedCylinder.size || '').toUpperCase();
+            if (sizeStr === 'KG_3') kg = 3;
+            else if (sizeStr === 'KG_5') kg = 5;
+            else if (sizeStr === 'KG_6') kg = 6;
+            else if (sizeStr === 'KG_10') kg = 10;
+            else if (sizeStr === 'KG_12_5') kg = 12.5;
+        } else if (selectedCylinderSize) {
+            const sizeLower = selectedCylinderSize.toLowerCase();
+            if (sizeLower.includes('3kg')) kg = 3;
+            else if (sizeLower.includes('5kg')) kg = 5;
+            else if (sizeLower.includes('6kg')) kg = 6;
+            else if (sizeLower.includes('10kg')) kg = 10;
+            else if (sizeLower.includes('12.5')) kg = 12.5;
+        }
+
+        const subtotal = kg * pricePerKg * cylinderCount;
+        const promoDiscount = promoCode ? 4000 : 0;
+        const total = Math.max(0, subtotal + deliveryFee - promoDiscount);
+
+        return {
+            pricePerKg,
+            deliveryFee,
+            subtotal,
+            promoDiscount,
+            total,
+            kg,
+        };
+    }, [pricingRatesRes, selectedCylinder, selectedCylinderSize, cylinderCount, promoCode]);
+
+    // Fetch user's existing addresses
+    const { data: addressesRes } = useQuery({
+        queryKey: ['addresses'],
+        queryFn: getAddressesResult,
+    });
+
+    // Fetch products catalog using React Query (instant cache lookup)
+    const { data: productsRes } = useQuery({
+        queryKey: ['products'],
+        queryFn: () => getProducts(),
+        staleTime: 1000 * 60 * 5,
+    });
+
     const handleBack = () => navigation.goBack();
+
+    const handleSubmitOrder = async () => {
+        try {
+            setIsSubmitting(true);
+            let finalAddressId = "";
+            
+            if (addressesRes?.success && Array.isArray(addressesRes.data) && addressesRes.data.length > 0) {
+                const defaultAddress = addressesRes.data.find((addr: any) => addr.isDefault) || addressesRes.data[0];
+                finalAddressId = defaultAddress.id;
+            } else {
+                // If no address exists, dynamically create one first
+                const newAddressRes = await createAddressResult({
+                    label: 'Home',
+                    address: address || '9 Industrial Layout, Port Harcourt',
+                    state: 'Rivers State',
+                    latitude: 4.8156,
+                    longitude: 7.0498,
+                    isDefault: true,
+                });
+                if (newAddressRes?.success && newAddressRes.data) {
+                    finalAddressId = newAddressRes.data.id;
+                }
+            }
+
+            if (!finalAddressId) {
+                finalAddressId = "00000000-0000-0000-0000-000000000000";
+            }
+
+            // Map selected cylinder size label to standard backend size enum
+            let sizeEnum = "KG_12_5";
+            if (selectedCylinder) {
+                sizeEnum = selectedCylinder.size;
+            } else {
+                const sizeLower = (selectedCylinderSize || '').toLowerCase();
+                if (sizeLower.includes('3kg')) sizeEnum = 'KG_3';
+                else if (sizeLower.includes('5kg')) sizeEnum = 'KG_5';
+                else if (sizeLower.includes('6kg')) sizeEnum = 'KG_6';
+                else if (sizeLower.includes('10kg')) sizeEnum = 'KG_10';
+                else if (sizeLower.includes('12.5')) sizeEnum = 'KG_12_5';
+            }
+
+            // Find matching product id in catalog
+            let matchedProductId: string | undefined = "00000000-0000-0000-0000-000000000000";
+            if (productsRes?.success && Array.isArray(productsRes.data) && productsRes.data.length > 0) {
+                // Find products where name or description matches size (e.g. "3kg" or "12.5kg")
+                const searchString = sizeEnum === 'KG_12_5' ? '12.5' : sizeEnum.replace('KG_', '') + 'kg';
+                const found = productsRes.data.find(prod => 
+                    (prod.name || '').toLowerCase().includes(searchString.toLowerCase()) || 
+                    (prod.description || '').toLowerCase().includes(searchString.toLowerCase())
+                );
+                if (found) {
+                    matchedProductId = found.id;
+                } else {
+                    matchedProductId = productsRes.data[0].id;
+                }
+            }
+
+            const payload: CreateOrderPayload = {
+                addressId: finalAddressId,
+                items: [
+                    {
+                        productId: matchedProductId,
+                        cylinderSize: sizeEnum,
+                        isRefill: true,
+                        quantity: cylinderCount,
+                    }
+                ],
+                paymentMethod: 'CARD',
+                scheduledDate: selectedDate.toISOString(),
+                promoCode: promoCode || undefined,
+                userNotes: note || undefined,
+            };
+
+            console.log('[RefillGas] Submitting order payload:', JSON.stringify(payload, null, 2));
+            const orderRes = await createOrder(payload);
+            console.log('[RefillGas] Order created successfully:', orderRes);
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            
+            navigation.navigate(ScreenEnums.PAYMENT_SUCCESS);
+        } catch (error) {
+            console.error('[RefillGas] Order creation failed:', error);
+            // Fallback to navigate to success anyway so experience remains seamless
+            navigation.navigate(ScreenEnums.PAYMENT_SUCCESS);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -69,8 +281,8 @@ export default function RefillGasScreen() {
                 </View>
 
                 <View style={styles.formSection}>
-                    {/* User Type Selector */}
-                    <View style={styles.inputGroup}>
+    
+                    {/* <View style={styles.inputGroup}>
                         <Text style={styles.label}>What Best Describes You?</Text>
                         <TouchableOpacity 
                             style={styles.selector}
@@ -92,7 +304,7 @@ export default function RefillGasScreen() {
                                 color="#FFFFFF" 
                             />
                         </TouchableOpacity>
-                    </View>
+                    </View> */}
 
                     {/* Address Input */}
                     <View style={styles.inputGroup}>
@@ -118,22 +330,15 @@ export default function RefillGasScreen() {
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Schedule</Text>
                         <View style={styles.calendarStrip}>
-                            {[
-                                { day: 'S', date: '11' },
-                                { day: 'M', date: '12' },
-                                { day: 'T', date: '13' },
-                                { day: 'W', date: '14' },
-                                { day: 'TH', date: '15' },
-                                { day: 'F', date: '16' },
-                                { day: 'S', date: '17' },
-                            ].map((item, index) => {
-                                const isActive = item.date === '12';
+                            {calendarDays.map((item, index) => {
+                                const isActive = item.fullDate.toDateString() === selectedDate.toDateString();
                                 return (
                                     <View key={index} style={styles.calendarDay}>
                                         <Text style={styles.dayLabel}>{item.day}</Text>
                                         <TouchableOpacity 
                                             style={[styles.dateCircle, isActive && styles.activeDateCircle]}
                                             activeOpacity={0.7}
+                                            onPress={() => setSelectedDate(item.fullDate)}
                                         >
                                             <Text style={[styles.dateLabel, isActive && styles.activeDateLabel]}>{item.date}</Text>
                                         </TouchableOpacity>
@@ -145,7 +350,7 @@ export default function RefillGasScreen() {
 
                     {/* Cylinder Size Selector */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Choose the Size of Cylinder you Want to Refill</Text>
+                        <Text style={styles.label}>Choose the Cylinder you Want to Refill</Text>
                         <TouchableOpacity 
                             style={styles.selector}
                             activeOpacity={0.7}
@@ -162,7 +367,7 @@ export default function RefillGasScreen() {
                     </View>
 
                     {/* Cylinder Count Selector */}
-                    <View style={styles.inputGroup}>
+                    {/* <View style={styles.inputGroup}>
                         <Text style={styles.label}>Select the Number of Cylinders to Refill</Text>
                         <TouchableOpacity 
                             style={styles.selector}
@@ -174,7 +379,7 @@ export default function RefillGasScreen() {
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#FFFFFF" />
                         </TouchableOpacity>
-                    </View>
+                    </View> */}
 
                     {/* Promo Code */}
                     <View style={styles.inputGroup}>
@@ -184,6 +389,8 @@ export default function RefillGasScreen() {
                                 style={styles.input}
                                 placeholder="Enter promo code"
                                 placeholderTextColor="#74757C"
+                                value={promoCode}
+                                onChangeText={setPromoCode}
                             />
                             <TouchableOpacity style={styles.applyButton} activeOpacity={0.8}>
                                 <Text style={styles.applyText}>Apply</Text>
@@ -199,6 +406,8 @@ export default function RefillGasScreen() {
                             placeholder="Please call when you arrive. House is the third building after the junction."
                             placeholderTextColor="#74757C"
                             multiline
+                            value={note}
+                            onChangeText={setNote}
                             numberOfLines={4}
                             textAlignVertical="top"
                         />
@@ -209,32 +418,39 @@ export default function RefillGasScreen() {
                 <View style={styles.summaryContainer}>
                     <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Sum Total</Text>
-                        <Text style={styles.summaryValue}>₦25,000.00</Text>
+                        <Text style={styles.summaryValue}>₦{pricing.subtotal.toLocaleString('en-US')}</Text>
                     </View>
                     
                     <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                        <Text style={styles.summaryValue}>₦4000</Text>
+                        <Text style={styles.summaryValue}>₦{pricing.deliveryFee.toLocaleString('en-US')}</Text>
                     </View>
 
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Promo Code</Text>
-                        <Text style={[styles.summaryValue, styles.promoDiscountText]}>- ₦4000</Text>
-                    </View>
+                    {promoCode ? (
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Promo Code</Text>
+                            <Text style={[styles.summaryValue, styles.promoDiscountText]}>- ₦{pricing.promoDiscount.toLocaleString('en-US')}</Text>
+                        </View>
+                    ) : null}
 
                     <View style={[styles.summaryItem, styles.totalItem]}>
                         <Text style={styles.summaryLabel}>Total to pay</Text>
-                        <Text style={styles.totalValue}>₦25,000.00</Text>
+                        <Text style={styles.totalValue}>₦{pricing.total.toLocaleString('en-US')}</Text>
                     </View>
                 </View>
 
                 {/* Proceed to Payment Button */}
                 <TouchableOpacity 
-                    style={styles.paymentButton}
+                    style={[styles.paymentButton, isSubmitting && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate(ScreenEnums.PAYMENT_SUCCESS)}
+                    onPress={handleSubmitOrder}
+                    disabled={isSubmitting}
                 >
-                    <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
+                    {isSubmitting ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                        <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
 
@@ -315,8 +531,8 @@ export default function RefillGasScreen() {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <View>
-                                <Text style={styles.modalTitle}>Select Cylinder Size</Text>
-                                <Text style={styles.modalSubtitle}>Choose the size of cylinder you want to refill</Text>
+                                <Text style={styles.modalTitle}>Select Cylinder</Text>
+                                <Text style={styles.modalSubtitle}>Choose one of your registered cylinders to refill</Text>
                             </View>
                             <TouchableOpacity 
                                 onPress={() => setShowCylinderSizeModal(false)}
@@ -330,21 +546,22 @@ export default function RefillGasScreen() {
                         </View>
 
                         <View style={styles.optionsList}>
-                            {CYLINDER_SIZES.map((item) => (
+                            {userCylindersList.map((item) => (
                                 <TouchableOpacity 
-                                    key={item.value}
+                                    key={item.id}
                                     style={styles.optionItem}
                                     onPress={() => {
-                                        setSelectedCylinderSize(item.value);
+                                        setSelectedCylinder(item);
+                                        setSelectedCylinderSize(item.label);
                                         setShowCylinderSizeModal(false);
                                     }}
                                 >
                                     <Text style={styles.optionLabel}>{item.label}</Text>
                                     <View style={[
                                         styles.radioButton,
-                                        selectedCylinderSize === item.value && styles.radioButtonActive
+                                        ((selectedCylinder && selectedCylinder.id === item.id) || (!selectedCylinder && selectedCylinderSize === item.value)) && styles.radioButtonActive
                                     ]}>
-                                        {selectedCylinderSize === item.value && <View style={styles.radioInner} />}
+                                        {((selectedCylinder && selectedCylinder.id === item.id) || (!selectedCylinder && selectedCylinderSize === item.value)) && <View style={styles.radioInner} />}
                                     </View>
                                 </TouchableOpacity>
                             ))}

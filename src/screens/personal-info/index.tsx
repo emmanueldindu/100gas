@@ -7,6 +7,8 @@ import { COLORS } from '../../constants/colors';
 import { FONT } from '../../constants/fonts';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
+import { useQuery } from '@tanstack/react-query';
+import { getProfile } from '../../service';
 
 interface InfoItemProps {
     icon: keyof typeof Ionicons.glyphMap;
@@ -31,14 +33,16 @@ const InfoItem = ({ icon, value, onPress }: InfoItemProps) => (
 export default function PersonalInfoScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
 
-    /* Commenting out implementation for now to focus on design
-    const { data: profileResponse, isLoading, isError } = useQuery({
+    const { data: profileResponse } = useQuery({
         queryKey: ['profile'],
         queryFn: getProfile,
         staleTime: 1000 * 60 * 5,
     });
+
     const user = profileResponse?.data;
-    */
+    const fullName = user ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Miracle Emeka';
+    const phone = user?.phone || '+2349026190455';
+    const email = user?.email || 'miracleemeka@gmail.com';
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -63,21 +67,21 @@ export default function PersonalInfoScreen() {
                 <View style={styles.infoList}>
                     <InfoItem 
                         icon="person-outline" 
-                        value="Miracle Emeka" 
+                        value={fullName} 
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_NAME)}
                     />
                     <View style={styles.separator} />
                     
                     <InfoItem 
                         icon="call-outline" 
-                        value="+2349026190455" 
+                        value={phone} 
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_PHONE)}
                     />
                     <View style={styles.separator} />
 
                     <InfoItem 
                         icon="mail-outline" 
-                        value="miracleemeka@gmail.com" 
+                        value={email} 
                         onPress={() => navigation.navigate(ScreenEnums.UPDATE_EMAIL)}
                     />
                     <View style={styles.separator} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -7,26 +7,107 @@ import {
     TouchableOpacity, 
     ScrollView, 
     StatusBar,
-    Platform
+    Platform,
+    ActivityIndicator,
+    DeviceEventEmitter
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { FONT } from '../../constants/fonts';
 import { RootStackNavigationProp } from '../screens.types';
 import ScreenEnums from '../../enums/screen-enums';
+import { getProducts, getCategories, addToCart, getCart } from '../../service';
+import { useQuery } from '@tanstack/react-query';
 
-const CATEGORIES = ['Gas Cylinders', 'Gas Burners', 'Regulators', 'Hoses', 'Accessories'];
+const STATIC_CATEGORIES = [
+    { id: 'all', name: 'All' },
+    { id: 'cylinders', name: 'Gas Cylinders' },
+    { id: 'burners', name: 'Gas Burners' },
+    { id: 'regulators', name: 'Regulators' },
+    { id: 'hoses', name: 'Hoses' },
+    { id: 'accessories', name: 'Accessories' }
+];
 
 export default function GasHubScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
     const [activeCategory, setActiveCategory] = useState(0);
     const [cartCount, setCartCount] = useState(0);
 
-    const handleAddToCart = () => {
-        setCartCount(prev => prev + 1);
+    const { data: categoriesResponse } = useQuery({
+        queryKey: ['productCategories'],
+        queryFn: getCategories,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const { data: productsResponse, isLoading } = useQuery({
+        queryKey: ['products'],
+        queryFn: () => getProducts(),
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const categories = categoriesResponse?.success && Array.isArray(categoriesResponse.data) && categoriesResponse.data.length > 0
+        ? [{ id: 'all', name: 'All' }, ...categoriesResponse.data]
+        : STATIC_CATEGORIES;
+
+    const products = productsResponse?.success ? (productsResponse.data || []) : [];
+
+    const syncCartCount = async () => {
+        const cart = await getCart();
+        const count = cart.reduce((acc, item) => acc + item.quantity, 0);
+        setCartCount(count);
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            syncCartCount();
+        }, [])
+    );
+
+    const handleAddToCart = async (item: any) => {
+        await addToCart({
+            id: item.id,
+            name: item.name,
+            price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0,
+            image: item.image || ''
+        });
+        syncCartCount();
+    };
+
+    const activeCat = categories[activeCategory];
+    const filteredProducts = products.filter(product => {
+        if (!activeCat || activeCat.id === 'all') return true;
+
+        // If the category is fetched dynamically with actual UUIDs from db
+        if (activeCat.id && !['all', 'cylinders', 'burners', 'regulators', 'hoses', 'accessories'].includes(activeCat.id)) {
+            return product.categoryId === activeCat.id;
+        }
+
+        // Resilient fallback classification using name/description matching
+        const catName = activeCat.name.toLowerCase();
+        const prodName = (product.name || '').toLowerCase();
+        const prodDesc = (product.description || '').toLowerCase();
+
+        if (catName.includes('cylinder')) {
+            return prodName.includes('cylinder') || prodDesc.includes('cylinder');
+        }
+        if (catName.includes('burner')) {
+            return prodName.includes('burner') || prodDesc.includes('burner');
+        }
+        if (catName.includes('regulator')) {
+            return prodName.includes('regulator') || prodDesc.includes('regulator');
+        }
+        if (catName.includes('hose')) {
+            return prodName.includes('hose') || prodDesc.includes('hose');
+        }
+        
+        // Accessories tab: items that don't match cylinders, burners, regulators, or hoses
+        return !prodName.includes('cylinder') && 
+               !prodName.includes('burner') && 
+               !prodName.includes('regulator') && 
+               !prodName.includes('hose');
+    });
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -50,9 +131,9 @@ export default function GasHubScreen() {
                     showsHorizontalScrollIndicator={false} 
                     contentContainerStyle={styles.categoriesContent}
                 >
-                    {CATEGORIES.map((category, index) => (
+                    {categories.map((category, index) => (
                         <TouchableOpacity 
-                            key={index} 
+                            key={category.id || index.toString()} 
                             style={[
                                 styles.categoryPill, 
                                 activeCategory === index && styles.activeCategoryPill
@@ -63,44 +144,63 @@ export default function GasHubScreen() {
                                 styles.categoryText,
                                 activeCategory === index && styles.activeCategoryText
                             ]}>
-                                {category}
+                                {category.name}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
 
-            <ScrollView 
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-            >
-                <View style={styles.productGrid}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-                        <View key={item} style={styles.productCard}>
-                            <View style={styles.productImageContainer}>
-                                <Image 
-                                    source={require('../../assets/images/gasimg.png')} 
-                                    style={styles.productImage} 
-                                    resizeMode="contain" 
-                                />
-                            </View>
-                            <View style={styles.productInfo}>
-                                <View style={styles.productPriceContainer}>
-                                    <Text style={styles.productName}>Gas Cylinder</Text>
-                                    <Text style={styles.productPrice}>N18000</Text>
-                                </View>
-                                <TouchableOpacity 
-                                    style={styles.addButton} 
-                                    activeOpacity={0.8}
-                                    onPress={handleAddToCart}
-                                >
-                                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    ))}
+            {isLoading ? (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
-            </ScrollView>
+            ) : filteredProducts.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Image 
+                        source={require('../../assets/images/empty.png')} 
+                        style={styles.emptyImage}
+                        resizeMode="contain"
+                    />
+                    <Text style={styles.emptyText}>No products available in this category.</Text>
+                </View>
+            ) : (
+                <ScrollView 
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    <View style={styles.productGrid}>
+                        {filteredProducts.map((item) => (
+                            <View key={item.id} style={styles.productCard}>
+                                <View style={styles.productImageContainer}>
+                                    <Image 
+                                        source={
+                                            item.image && (item.image.startsWith('http://') || item.image.startsWith('https://'))
+                                                ? { uri: item.image }
+                                                : require('../../assets/images/gasimg.png')
+                                        } 
+                                        style={styles.productImage} 
+                                        resizeMode="contain" 
+                                    />
+                                </View>
+                                <View style={styles.productInfo}>
+                                    <View style={styles.productPriceContainer}>
+                                        <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                                        <Text style={styles.productPrice}>₦{item.price}</Text>
+                                    </View>
+                                    <TouchableOpacity 
+                                        style={styles.addButton} 
+                                        activeOpacity={0.8}
+                                        onPress={() => handleAddToCart(item)}
+                                    >
+                                        <Ionicons name="add" size={20} color="#FFFFFF" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </ScrollView>
+            )}
 
             <View style={styles.footer}>
                 <TouchableOpacity 
@@ -177,7 +277,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 0,
-        paddingBottom: 100,
+        paddingBottom: 120,
     },
     productGrid: {
         flexDirection: 'row',
@@ -265,5 +365,30 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontSize: 12,
         fontFamily: FONT.garnet_700_bold,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 300,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 350,
+        paddingHorizontal: 20,
+    },
+    emptyImage: {
+        width: 140,
+        height: 140,
+        marginBottom: 16,
+    },
+    emptyText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        textAlign: 'center',
+        opacity: 0.8,
     },
 });

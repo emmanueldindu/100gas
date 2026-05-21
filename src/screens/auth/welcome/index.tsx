@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
     const handleContinue = () => {
         const parts = name.trim().split(/\s+/);
         const firstName = parts[0];
-        const lastName = parts.slice(1).join(' ') || '';
+        const lastName = parts.slice(1).join(' ') || firstName;
 
         const payload = {
             registrationToken: route.params?.registrationToken || '',

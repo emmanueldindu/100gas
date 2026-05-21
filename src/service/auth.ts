@@ -1,4 +1,5 @@
 import api from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const requestOtp = async (phone: string) => {
   try {
@@ -45,6 +46,9 @@ export const registerUser = async (payload: any) => {
 export const getProfile = async () => {
   try {
     const response = await api.get('/v1/auth/me');
+    if (response.data?.success && response.data?.data) {
+      await AsyncStorage.setItem('cachedProfile', JSON.stringify(response.data.data));
+    }
     return response.data;
   } catch (error: any) {
     if (error.response) {

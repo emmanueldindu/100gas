@@ -10,12 +10,15 @@ import {
     ScrollView,
     Pressable,
     FlatList,
-    ActivityIndicator
+    ActivityIndicator,
+    Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { SafeAreaView as NativeSafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 import ScreenEnums from '../../../enums/screen-enums';
 import { COLORS } from '../../../constants/colors';
 import { FONT } from '../../../constants/fonts';
@@ -30,7 +33,7 @@ export default function LocationScreen() {
     
     const [selectedState, setSelectedState] = useState('');
     const [address, setAddress] = useState('');
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [isStateModalVisible, setIsStateModalVisible] = useState(false);
     const [states, setStates] = useState<{id: string, name: string}[]>([]);
     const [isLoadingStates, setIsLoadingStates] = useState(false);
 
@@ -51,6 +54,13 @@ export default function LocationScreen() {
         fetchStates();
     }, []);
 
+    const toggleStateModal = () => setIsStateModalVisible(!isStateModalVisible);
+
+    const handleSelectState = (stateName: string) => {
+        setSelectedState(stateName);
+        toggleStateModal();
+    };
+
     const isReady = selectedState && address.length > 5;
 
     const handleContinue = () => {
@@ -61,7 +71,7 @@ export default function LocationScreen() {
             latitude: 6.5244,
             longitude: 3.3792,
         };
-        navigation.navigate(ScreenEnums.GAS_SIZE, { payload } as any);
+        navigation.navigate(ScreenEnums.CUSTOMER_TYPE_AUTH, { payload } as any);
     };
 
     return (
@@ -93,7 +103,7 @@ export default function LocationScreen() {
                                 <TouchableOpacity 
                                     style={styles.selector}
                                     activeOpacity={0.7}
-                                    onPress={() => setShowDropdown(!showDropdown)}
+                                    onPress={toggleStateModal}
                                 >
                                     <Text style={[
                                         styles.selectorText,
@@ -107,32 +117,6 @@ export default function LocationScreen() {
                                         color="#FFFFFF" 
                                     />
                                 </TouchableOpacity>
-
-                                {showDropdown && (
-                                    <View style={styles.dropdownMenu}>
-                                        {isLoadingStates ? (
-                                            <ActivityIndicator color={COLORS.primary} style={{ padding: 10 }} />
-                                        ) : (
-                                            <FlatList
-                                                data={states}
-                                                keyExtractor={(item) => item.id}
-                                                renderItem={({ item }) => (
-                                                    <TouchableOpacity 
-                                                        style={styles.dropdownItem}
-                                                        onPress={() => {
-                                                            setSelectedState(item.name);
-                                                            setShowDropdown(false);
-                                                        }}
-                                                    >
-                                                        <Text style={styles.itemText}>{item.name}</Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                                style={{ maxHeight: 200 }}
-                                                nestedScrollEnabled={true}
-                                            />
-                                        )}
-                                    </View>
-                                )}
                             </View>
 
                             {/* Address Input */}
@@ -141,7 +125,7 @@ export default function LocationScreen() {
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Enter your address"
-                                    placeholderTextColor="#2F3338"
+                                    placeholderTextColor="#74757C"
                                     value={address}
                                     onChangeText={setAddress}
                                     autoCapitalize="words"
@@ -168,6 +152,64 @@ export default function LocationScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* State Selection Modal */}
+            <Modal
+                visible={isStateModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={toggleStateModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity 
+                        style={styles.backdrop} 
+                        activeOpacity={1} 
+                        onPress={toggleStateModal} 
+                    >
+                        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
+                    </TouchableOpacity>
+                    
+                    <View style={styles.bottomSheet}>
+                        <View style={styles.bottomSheetHeader}>
+                            <Text style={styles.bottomSheetTitle}>Select State</Text>
+                            <TouchableOpacity onPress={toggleStateModal} style={styles.closeButton}>
+                                <Image source={require("../../../assets/icons/close.png")} style={{
+                                    width: 24,
+                                    height: 24,
+                                }}/>
+                            </TouchableOpacity>
+                        </View>
+
+                        {isLoadingStates ? (
+                            <ActivityIndicator color={COLORS.primary} style={{ paddingVertical: 40 }} />
+                        ) : (
+                            <FlatList
+                                data={states}
+                                keyExtractor={(item) => item.id}
+                                showsVerticalScrollIndicator={false}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity 
+                                        style={styles.stateItem}
+                                        activeOpacity={0.7}
+                                        onPress={() => handleSelectState(item.name)}
+                                    >
+                                        <Text style={styles.stateName}>{item.name}</Text>
+                                        <View style={[
+                                            styles.radioButton,
+                                            selectedState === item.name && styles.radioButtonActive
+                                        ]}>
+                                            {selectedState === item.name && <View style={styles.radioInner} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                ItemSeparatorComponent={() => <View style={styles.divider} />}
+                                style={{ maxHeight: 400 }}
+                            />
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </NativeSafeAreaView>
     );
 }
@@ -218,25 +260,6 @@ const styles = StyleSheet.create({
         color: COLORS.primaryWhite,
         fontFamily: FONT.garnet_400_regular,
     },
-    dropdownMenu: {
-        marginTop: 4,
-        backgroundColor: '#1E1E1E',
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: '#2F3338',
-        maxHeight: 200,
-        zIndex: 1000,
-    },
-    dropdownItem: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#2F3338',
-    },
-    itemText: {
-        color: COLORS.primaryWhite,
-        fontSize: 16,
-        fontFamily: FONT.garnet_400_regular,
-    },
     input: {
         height: 56,
         borderWidth: 1,
@@ -277,5 +300,71 @@ const styles = StyleSheet.create({
         color: COLORS.primaryWhite,
         fontSize: 16,
         fontFamily: FONT.garnet_500_medium,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    bottomSheet: {
+        backgroundColor: '#2F3338',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: 50,
+    },
+    bottomSheetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    bottomSheetTitle: {
+        fontSize: 20,
+        fontFamily: FONT.garnet_600_semibold,
+        color: '#FFFFFF',
+    },
+    closeButton: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    stateItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 18,
+    },
+    stateName: {
+        fontSize: 16,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+    },
+    radioButton: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: '#74757C',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 16,
+    },
+    radioButtonActive: {
+        borderColor: COLORS.primary,
+    },
+    radioInner: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: COLORS.primary,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
 });

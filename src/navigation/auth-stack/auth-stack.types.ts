@@ -26,6 +26,9 @@ export type AuthStackParamList = {
     [ScreenEnums.LOCATION]: {
         payload: RegisterPayload;
     } | undefined;
+    [ScreenEnums.CUSTOMER_TYPE_AUTH]: {
+        payload: RegisterPayload;
+    } | undefined;
     [ScreenEnums.GAS_SIZE]: {
         payload: RegisterPayload;
     } | undefined;

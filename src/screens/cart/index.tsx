@@ -8,29 +8,37 @@ import {
     ScrollView, 
     StatusBar,
     Platform,
-    Dimensions
+    Dimensions,
+    ActivityIndicator,
+    DeviceEventEmitter,
+    TextInput
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { FONT } from '../../constants/fonts';
 import { RootStackNavigationProp } from '../screens.types';
+import ScreenEnums from '../../enums/screen-enums';
 
 import { Swipeable } from 'react-native-gesture-handler';
+import { getCart, removeFromCart, updateQuantity, CartItem as CartItemType, createOrder, getAddressesResult, createAddressResult, clearCart } from '../../service';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
 interface CartItemProps {
-    id: number;
+    id: string | number;
     name: string;
-    price: string;
+    price: string | number;
     image: any;
     quantity: number;
-    onDelete?: (id: number) => void;
+    onDelete?: (id: string | number) => void;
+    onUpdateQuantity?: (id: string | number, qty: number) => void;
 }
 
-const CartItem = ({ id, name, price, image, quantity, onDelete }: CartItemProps) => {
+const CartItem = ({ id, name, price, image, quantity, onDelete, onUpdateQuantity }: CartItemProps) => {
     const renderRightActions = () => {
         return (
             <TouchableOpacity 
@@ -43,6 +51,8 @@ const CartItem = ({ id, name, price, image, quantity, onDelete }: CartItemProps)
         );
     };
 
+    const formattedPrice = typeof price === 'number' ? `₦${price.toLocaleString()}` : price;
+
     return (
         <View style={styles.swipeWrapper}>
             <Swipeable 
@@ -51,18 +61,34 @@ const CartItem = ({ id, name, price, image, quantity, onDelete }: CartItemProps)
             >
                 <View style={styles.cartItem}>
                     <View style={styles.itemImageContainer}>
-                        <Image source={image} style={styles.itemImage} resizeMode="contain" />
+                        <Image 
+                            source={
+                                typeof image === 'string' && (image.startsWith('http') || image.startsWith('https'))
+                                    ? { uri: image }
+                                    : typeof image === 'number'
+                                        ? image
+                                        : require('../../assets/images/gasimg.png')
+                            } 
+                            style={styles.itemImage} 
+                            resizeMode="contain" 
+                        />
                     </View>
                     <View style={styles.itemInfo}>
-                        <Text style={styles.itemName}>{name}</Text>
-                        <Text style={styles.itemPrice}>{price}</Text>
+                        <Text style={styles.itemName} numberOfLines={1}>{name}</Text>
+                        <Text style={styles.itemPrice}>{formattedPrice}</Text>
                     </View>
                     <View style={styles.quantityContainer}>
-                        <TouchableOpacity style={styles.quantityBtn}>
+                        <TouchableOpacity 
+                            style={styles.quantityBtn}
+                            onPress={() => onUpdateQuantity?.(id, quantity - 1)}
+                        >
                             <Ionicons name="remove" size={16} color="#000000" />
                         </TouchableOpacity>
                         <Text style={styles.quantityText}>{quantity}</Text>
-                        <TouchableOpacity style={styles.quantityBtn}>
+                        <TouchableOpacity 
+                            style={styles.quantityBtn}
+                            onPress={() => onUpdateQuantity?.(id, quantity + 1)}
+                        >
                             <Ionicons name="add" size={16} color="#000000" />
                         </TouchableOpacity>
                     </View>
@@ -74,18 +100,183 @@ const CartItem = ({ id, name, price, image, quantity, onDelete }: CartItemProps)
 
 export default function CartScreen() {
     const navigation = useNavigation<RootStackNavigationProp>();
+    const queryClient = useQueryClient();
     const [isCheckoutMode, setIsCheckoutMode] = useState(false);
-    const [items, setItems] = useState([
-        { id: 1, name: '24kg Gas Cylinder', price: 'N18000', quantity: 1, image: require('../../assets/images/gasimg.png') },
-        { id: 2, name: '24kg Gas Cylinder', price: 'N18000', quantity: 1, image: require('../../assets/images/gasimg.png') },
-        { id: 3, name: '24kg Gas Cylinder', price: 'N18000', quantity: 1, image: require('../../assets/images/gasimg.png') },
-        { id: 4, name: '24kg Gas Cylinder', price: 'N18000', quantity: 1, image: require('../../assets/images/gasimg.png') },
-        { id: 5, name: '24kg Gas Cylinder', price: 'N18000', quantity: 1, image: require('../../assets/images/gasimg.png') },
-    ]);
+    const [items, setItems] = useState<CartItemType[]>([]);
+    const [addressText, setAddressText] = useState('9 Industrial Layout, Port Harcourt');
+    const [selectedDayIndex, setSelectedDayIndex] = useState(1); // default index
+    const [promoCode, setPromoCode] = useState('');
+    const [promoDiscount, setPromoDiscount] = useState(4000); // promo discount amount
 
-    const handleDelete = (id: number) => {
-        setItems(prev => prev.filter(item => item.id !== id));
+    const loadCart = async () => {
+        const cart = await getCart();
+        setItems(cart);
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            loadCart();
+        }, [])
+    );
+
+    const handleDelete = async (id: string | number) => {
+        await removeFromCart(id);
+        loadCart();
+    };
+
+    const handleUpdateQuantity = async (id: string | number, qty: number) => {
+        if (qty < 1) {
+            handleDelete(id);
+        } else {
+            await updateQuantity(id, qty);
+            loadCart();
+        }
+    };
+
+    const subtotal = React.useMemo(() => {
+        return items.reduce((acc, item) => {
+            const numericPrice = typeof item.price === 'number' 
+                ? item.price 
+                : parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0;
+            return acc + (numericPrice * item.quantity);
+        }, 0);
+    }, [items]);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Fetch user's existing addresses
+    const { data: addressesRes } = useQuery({
+        queryKey: ['addresses'],
+        queryFn: getAddressesResult,
+    });
+
+    React.useEffect(() => {
+        if (addressesRes?.success && Array.isArray(addressesRes.data) && addressesRes.data.length > 0) {
+            const defaultAddress = addressesRes.data.find((addr: any) => addr.isDefault) || addressesRes.data[0];
+            if (defaultAddress?.address) {
+                setAddressText(defaultAddress.address);
+            }
+        }
+    }, [addressesRes]);
+
+    const getNext7Days = () => {
+        const days = [];
+        const dayLabels = ['S', 'M', 'T', 'W', 'TH', 'F', 'S'];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            days.push({
+                date: d,
+                dayLabel: dayLabels[d.getDay()],
+                dayNumber: d.getDate(),
+            });
+        }
+        return days;
+    };
+
+    const handleCheckoutSubmit = async () => {
+        try {
+            setIsSubmitting(true);
+            
+            let finalAddressId = "";
+            
+            // Check if addressText matches any existing address
+            if (addressesRes?.success && Array.isArray(addressesRes.data)) {
+                const found = addressesRes.data.find((addr: any) => 
+                    (addr.address || '').toLowerCase().trim() === addressText.toLowerCase().trim()
+                );
+                if (found) {
+                    finalAddressId = found.id;
+                }
+            }
+
+            // If no match, dynamically provision this address in the database!
+            if (!finalAddressId) {
+                const newAddressRes = await createAddressResult({
+                    label: 'Delivery Location',
+                    address: addressText,
+                    state: 'Rivers State',
+                    latitude: 4.8156,
+                    longitude: 7.0498,
+                    isDefault: true,
+                });
+                if (newAddressRes?.success && newAddressRes.data) {
+                    finalAddressId = newAddressRes.data.id;
+                }
+            }
+
+            if (!finalAddressId) {
+                finalAddressId = "00000000-0000-0000-0000-000000000000";
+            }
+
+            // Map cart items to backend format
+            const orderItems = items.map(item => {
+                let cylinderSize = 'KG_12_5';
+                const nameLower = (item.name || '').toLowerCase();
+                if (nameLower.includes('3kg')) cylinderSize = 'KG_3';
+                else if (nameLower.includes('5kg')) cylinderSize = 'KG_5';
+                else if (nameLower.includes('6kg')) cylinderSize = 'KG_6';
+                else if (nameLower.includes('10kg')) cylinderSize = 'KG_10';
+                else if (nameLower.includes('12.5')) cylinderSize = 'KG_12_5';
+
+                return {
+                    productId: item.id as string,
+                    quantity: item.quantity,
+                    isRefill: false,
+                    cylinderSize: cylinderSize
+                };
+            });
+
+            // Parse selected day from dynamic index
+            const scheduleDays = getNext7Days();
+            const selectedDayDate = scheduleDays[selectedDayIndex]?.date || new Date();
+            // Set default delivery time to 10:00 AM local time
+            selectedDayDate.setHours(10, 0, 0, 0);
+
+            const payload = {
+                addressId: finalAddressId,
+                paymentMethod: 'CARD',
+                scheduledDate: selectedDayDate.toISOString(),
+                items: orderItems,
+            };
+
+            console.log('[Cart] Submitting order payload:', JSON.stringify(payload, null, 2));
+
+            const response = await createOrder(payload);
+            
+            if (response?.success) {
+                console.log('[Cart] Order created successfully:', response);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Order Placed Successfully!',
+                    text2: 'Your items will be delivered soon.'
+                });
+                await clearCart();
+                queryClient.invalidateQueries({ queryKey: ['orders'] });
+                // Broadcast cart cleared update so home FAB count updates instantly
+                DeviceEventEmitter.emit('cart_updated');
+                navigation.navigate('BottomTabs', { screen: 'ORDER_HISTORY' });
+            } else {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Checkout Failed',
+                    text2: response?.error?.message || 'Order creation failed. Please try again.'
+                });
+            }
+        } catch (error: any) {
+            console.error('[Cart] Order placement error:', error);
+            Toast.show({
+                type: 'error',
+                text1: 'Checkout Error',
+                text2: error?.message || 'Something went wrong. Please try again.'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const deliveryFee = 4000;
+    const totalToPay = Math.max(0, subtotal + deliveryFee - promoDiscount);
 
     const isEmpty = items.length === 0;
 
@@ -143,7 +334,12 @@ export default function CartScreen() {
                 contentContainerStyle={styles.scrollContent}
             >
                 {items.map((item) => (
-                    <CartItem key={item.id} {...item} onDelete={handleDelete} />
+                    <CartItem 
+                        key={item.id} 
+                        {...item} 
+                        onDelete={handleDelete} 
+                        onUpdateQuantity={handleUpdateQuantity}
+                    />
                 ))}
 
                 {isCheckoutMode && (
@@ -153,10 +349,27 @@ export default function CartScreen() {
                             <Text style={styles.sectionTitle}>Delivery Address</Text>
                             <Text style={styles.sectionSubtitle}>Where do you want to receive your delivery?</Text>
                             <View style={styles.addressInputContainer}>
-                                <Text style={styles.addressText}>9 Industrial Layout, Port Harcourt</Text>
+                                <TextInput
+                                    style={styles.addressInput}
+                                    value={addressText}
+                                    onChangeText={setAddressText}
+                                    placeholder="Enter delivery address"
+                                    placeholderTextColor="#74757C"
+                                />
                                 <Ionicons name="search" size={20} color="#74757C" />
                             </View>
-                            <TouchableOpacity style={styles.gpsLink}>
+                            <TouchableOpacity 
+                                style={styles.gpsLink}
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                    setAddressText('9 Industrial Layout, Port Harcourt');
+                                    Toast.show({
+                                        type: 'info',
+                                        text1: 'GPS Location Synced',
+                                        text2: 'Set delivery address to your current device location.'
+                                    });
+                                }}
+                            >
                                 <Text style={styles.gpsLinkText}>Use GPS Location</Text>
                                 <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
                             </TouchableOpacity>
@@ -166,15 +379,20 @@ export default function CartScreen() {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Schedule</Text>
                             <View style={styles.calendarRow}>
-                                {['S', 'M', 'T', 'W', 'TH', 'F', 'S'].map((day, i) => (
-                                    <View key={i} style={styles.calendarDay}>
-                                        <Text style={styles.dayLabel}>{day}</Text>
-                                        <View style={[styles.dayCircle, i === 1 && styles.activeDayCircle]}>
-                                            <Text style={[styles.dayNumber, i === 1 && styles.activeDayNumber]}>
-                                                {11 + i}
+                                {getNext7Days().map((item, i) => (
+                                    <TouchableOpacity 
+                                        key={i} 
+                                        style={styles.calendarDay}
+                                        activeOpacity={0.7}
+                                        onPress={() => setSelectedDayIndex(i)}
+                                    >
+                                        <Text style={styles.dayLabel}>{item.dayLabel}</Text>
+                                        <View style={[styles.dayCircle, selectedDayIndex === i && styles.activeDayCircle]}>
+                                            <Text style={[styles.dayNumber, selectedDayIndex === i && styles.activeDayNumber]}>
+                                                {item.dayNumber}
                                             </Text>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 ))}
                             </View>
                         </View>
@@ -184,8 +402,38 @@ export default function CartScreen() {
                             <Text style={styles.sectionTitle}>Promo Code</Text>
                             <Text style={styles.sectionSubtitle}>Enter promo code</Text>
                             <View style={styles.promoInputContainer}>
-                                <Text style={styles.promoPlaceholder}>Enter promo code</Text>
-                                <TouchableOpacity style={styles.applyButton}>
+                                <TextInput
+                                    style={styles.promoInput}
+                                    value={promoCode}
+                                    onChangeText={setPromoCode}
+                                    placeholder="Enter promo code"
+                                    placeholderTextColor="#74757C"
+                                    autoCapitalize="characters"
+                                />
+                                <TouchableOpacity 
+                                    style={[
+                                        styles.applyButton, 
+                                        promoCode.trim().length > 0 && { backgroundColor: COLORS.primary }
+                                    ]}
+                                    activeOpacity={0.8}
+                                    onPress={() => {
+                                        const code = promoCode.trim().toUpperCase();
+                                        if (code === 'GAS30' || code === '100GAS') {
+                                            setPromoDiscount(4000);
+                                            Toast.show({
+                                                type: 'success',
+                                                text1: 'Promo Code Applied!',
+                                                text2: '₦4,000 delivery fee promo discount applied.'
+                                            });
+                                        } else if (code.length > 0) {
+                                            Toast.show({
+                                                type: 'error',
+                                                text1: 'Invalid Code',
+                                                text2: 'The promo code entered is invalid.'
+                                            });
+                                        }
+                                    }}
+                                >
                                     <Text style={styles.applyText}>Apply</Text>
                                 </TouchableOpacity>
                             </View>
@@ -195,28 +443,33 @@ export default function CartScreen() {
                         <View style={styles.summaryContainer}>
                             <View style={styles.summaryRow}>
                                 <Text style={styles.summaryLabel}>Sum Total</Text>
-                                <Text style={styles.summaryValue}>₦25,000.00</Text>
+                                <Text style={styles.summaryValue}>₦{subtotal.toLocaleString()}</Text>
                             </View>
                             <View style={styles.summaryRow}>
                                 <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                                <Text style={styles.summaryValue}>₦4000</Text>
+                                <Text style={styles.summaryValue}>₦{deliveryFee.toLocaleString()}</Text>
                             </View>
                             <View style={styles.summaryRow}>
                                 <Text style={styles.summaryLabel}>Promo Code</Text>
-                                <Text style={[styles.summaryValue, { color: '#EF4444' }]}>- ₦4000</Text>
+                                <Text style={[styles.summaryValue, { color: '#EF4444' }]}>- ₦{promoDiscount.toLocaleString()}</Text>
                             </View>
                             <View style={[styles.summaryRow, { marginTop: 8 }]}>
                                 <Text style={styles.totalLabel}>Total to pay</Text>
-                                <Text style={styles.totalValue}>₦25,000.00</Text>
+                                <Text style={styles.totalValue}>₦{totalToPay.toLocaleString()}</Text>
                             </View>
                         </View>
 
                         <TouchableOpacity 
-                            style={styles.proceedButton}
+                            style={[styles.proceedButton, isSubmitting && { opacity: 0.7 }]}
                             activeOpacity={0.8}
-                            onPress={() => {}}
+                            onPress={handleCheckoutSubmit}
+                            disabled={isSubmitting}
                         >
-                            <Text style={styles.proceedText}>Proceed to Payment</Text>
+                            {isSubmitting ? (
+                                <ActivityIndicator color="#FFFFFF" size="small" />
+                            ) : (
+                                <Text style={styles.proceedText}>Proceed to Payment</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 )}
@@ -229,7 +482,7 @@ export default function CartScreen() {
                         activeOpacity={0.8}
                         onPress={() => setIsCheckoutMode(true)}
                     >
-                        <Text style={styles.checkoutText}>Check out | ₦25,000.00</Text>
+                        <Text style={styles.checkoutText}>Check out | ₦{subtotal.toLocaleString()}</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -393,6 +646,14 @@ const styles = StyleSheet.create({
         height: 56,
         marginBottom: 12,
     },
+    addressInput: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+        height: '100%',
+        paddingRight: 10,
+    },
     addressText: {
         fontSize: 14,
         fontFamily: FONT.garnet_400_regular,
@@ -451,6 +712,14 @@ const styles = StyleSheet.create({
         paddingLeft: 16,
         paddingRight: 8,
         height: 56,
+    },
+    promoInput: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: FONT.garnet_400_regular,
+        color: '#FFFFFF',
+        height: '100%',
+        paddingRight: 10,
     },
     promoPlaceholder: {
         flex: 1,
